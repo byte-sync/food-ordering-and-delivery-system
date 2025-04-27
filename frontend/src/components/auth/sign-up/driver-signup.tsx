@@ -2,14 +2,17 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Car, Upload, FileText, Check } from "lucide-react"
+import { FileText, Car, MapPin, Check, Upload, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Modal } from "@/components/auth/modal"
+import { MapSelector } from "@/components/ui/map-selector"
+import { DocumentUploader } from "@/components/shared/document-uploader"
+import { userService, VehicleType } from "@/services/user-service"
 
 interface DriverSignUpProps {
   userData: {
@@ -18,71 +21,153 @@ interface DriverSignUpProps {
     lastName: string
     phone: string
     profileImage: string | null
+    password: string
   }
 }
 
 export function DriverSignUp({ userData }: DriverSignUpProps) {
-  const [vehicleNumber, setVehicleNumber] = useState("")
+  // Vehicle info state
   const [vehicleType, setVehicleType] = useState("")
-  const [showVehicleTypeModal, setShowVehicleTypeModal] = useState(false)
-  const [documents, setDocuments] = useState<{ name: string; file: File | null }[]>([
-    { name: "Driver's License", file: null },
-    { name: "Vehicle Registration", file: null },
-  ])
+  const [vehicleTypeText, setVehicleTypeText] = useState("") // To display selected vehicle type name
+  const [licensePlate, setLicensePlate] = useState("")
+  const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [showVehicleSelector, setShowVehicleSelector] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  
+  // Document states - manage each document independently
+  const [driversLicense, setDriversLicense] = useState<{ name: string; url: string }>({ name: "Driver's License", url: "" })
+  const [vehicleRegistration, setVehicleRegistration] = useState<{ name: string; url: string }>({ name: "Vehicle Registration", url: "" })
+  const [vehicleInsurance, setVehicleInsurance] = useState<{ name: string; url: string }>({ name: "Vehicle Insurance", url: "" })
+  // Store additional documents in an array
+  const [additionalDocuments, setAdditionalDocuments] = useState<{ name: string; url: string }[]>([])
+  
+  // Location state
+  const [location, setLocation] = useState("")
+  const [locationConfirmed, setLocationConfirmed] = useState(false)
+  
+  // UI state
+  const [showMap, setShowMap] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [errors, setErrors] = useState<{
-    vehicleNumber?: string
-    vehicleType?: string
-    documents?: string
-  }>({})
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
-  const validateForm = () => {
-    const newErrors: {
-      vehicleNumber?: string
-      vehicleType?: string
-      documents?: string
-    } = {}
+  // Fetch vehicle types on component mount
+  useEffect(() => {
+    const fetchVehicleTypes = async () => {
+      setIsLoading(true);
+      try {
+        const types = await userService.getVehicleTypes();
+        setVehicleTypes(types);
+      } catch (error) {
+        console.error("Failed to fetch vehicle types:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    if (!vehicleNumber) {
-      newErrors.vehicleNumber = "Vehicle number is required"
-    }
+    fetchVehicleTypes();
+  }, []);
 
-    if (!vehicleType) {
-      newErrors.vehicleType = "Vehicle type is required"
-    }
-
-    const missingDocuments = documents.some((doc) => !doc.file)
-    if (missingDocuments) {
-      newErrors.documents = "All documents are required"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
-      // Handle sign up logic
-      console.log("Driver sign up with:", {
-        ...userData,
-        vehicleNumber,
-        vehicleType,
-        documents,
-      })
-      setShowSuccessModal(true)
+      try {
+        // Format data for registration
+        const registrationData = {
+          // Common user data
+          email: userData.email,
+          password: userData.password,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          phone: userData.phone,
+          profilePictureUrl: userData.profileImage, // Changed from profileImage to profilePictureUrl
+          
+          // Driver specific data
+          vehicleTypeId: vehicleType,
+          licensePlate: licensePlate,
+          documents: [
+            driversLicense,
+            vehicleRegistration,
+            vehicleInsurance,
+            ...additionalDocuments
+          ],
+          location: location,
+          // Add coordinates if available from your map component
+        }
+
+        // Call the registration service
+        await userService.register(registrationData, "driver")
+        
+        // Show success modal
+        setShowSuccessModal(true)
+      } catch (error: any) {
+        console.error("Registration failed:", error)
+        setErrors({
+          ...errors,
+          general: error.response?.data?.message || "Registration failed. Please try again."
+        })
+      }
     }
   }
 
-  const handleVehicleTypeSelect = (type: string) => {
-    setVehicleType(type)
-    setShowVehicleTypeModal(false)
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {}
+    let isValid = true
+    
+    if (!vehicleType) {
+      newErrors.vehicleType = "Vehicle type is required"
+      isValid = false
+    }
+    
+    if (!licensePlate) {
+      newErrors.licensePlate = "License plate is required"
+      isValid = false
+    }
+    
+    const missingDocuments = !driversLicense.url || !vehicleRegistration.url || !vehicleInsurance.url || additionalDocuments.some((doc) => !doc.url || doc.url.trim() === "")
+    if (missingDocuments) {
+      newErrors.documents = "All documents are required"
+      isValid = false
+    }
+    
+    if (!location) {
+      newErrors.location = "Location is required"
+      isValid = false
+    }
+    
+    if (!locationConfirmed) {
+      newErrors.locationConfirmed = "Please confirm your location on the map"
+      isValid = false
+    }
+    
+    setErrors(newErrors)
+    return isValid
   }
 
-  const handleDocumentChange = (index: number, file: File | null) => {
-    const updatedDocuments = [...documents]
-    updatedDocuments[index].file = file
-    setDocuments(updatedDocuments)
+  const updateAdditionalDocument = (index: number, documentInfo: { name: string; url: string }) => {
+    const updatedDocuments = [...additionalDocuments];
+    updatedDocuments[index] = documentInfo;
+    setAdditionalDocuments(updatedDocuments);
+  }
+
+  const addDocument = () => {
+    setAdditionalDocuments([...additionalDocuments, { name: "Additional Document", url: "" }])
+  }
+
+  const confirmLocationSelection = () => {
+    setLocationConfirmed(true)
+    setShowMap(false)
+  }
+
+  // Filter vehicle types based on search query
+  const filteredVehicleTypes = vehicleTypes.filter(type => 
+    type.type.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const selectVehicleType = (id: string, typeName: string) => {
+    setVehicleType(id)
+    setVehicleTypeText(typeName)
+    setShowVehicleSelector(false)
   }
 
   const containerVariants = {
@@ -108,12 +193,6 @@ export function DriverSignUp({ userData }: DriverSignUpProps) {
     },
   }
 
-  const vehicleTypes = [
-    { id: "bike", name: "Bike" },
-    { id: "car", name: "Car" },
-    { id: "van", name: "Van" },
-  ]
-
   return (
     <>
       <motion.form
@@ -123,41 +202,45 @@ export function DriverSignUp({ userData }: DriverSignUpProps) {
         initial="hidden"
         animate="visible"
       >
-        <motion.div className="space-y-2" variants={itemVariants}>
-          <Label htmlFor="vehicleNumber" className="text-sm font-medium">
-            Vehicle Number
+        <motion.div className="space-y-4" variants={itemVariants}>
+          <Label htmlFor="vehicleType" className="text-sm font-medium">
+            Vehicle Type
           </Label>
           <div className="relative">
             <Car className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              id="vehicleNumber"
-              placeholder="e.g., ABC123"
-              className={`pl-10 ${errors.vehicleNumber ? "border-red-500" : ""}`}
-              value={vehicleNumber}
-              onChange={(e) => setVehicleNumber(e.target.value)}
+              id="vehicleType"
+              placeholder={isLoading ? "Loading vehicle types..." : "Select your vehicle type"}
+              className={`pl-10 ${errors.vehicleType ? "border-red-500" : ""} cursor-pointer`}
+              value={vehicleTypeText}
+              readOnly
+              onClick={() => !isLoading && setShowVehicleSelector(true)}
             />
           </div>
-          {errors.vehicleNumber && (
+          {errors.vehicleType && (
             <motion.p className="text-sm text-red-500" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {errors.vehicleNumber}
+              {errors.vehicleType}
             </motion.p>
           )}
         </motion.div>
 
-        <motion.div className="space-y-2" variants={itemVariants}>
-          <Label className="text-sm font-medium">Vehicle Type</Label>
-          <Button
-            type="button"
-            variant="outline"
-            className={`w-full justify-between ${errors.vehicleType ? "border-red-500" : ""}`}
-            onClick={() => setShowVehicleTypeModal(true)}
-          >
-            {vehicleType ? vehicleType : "Select Vehicle Type"}
-            <Car className="h-4 w-4 ml-2" />
-          </Button>
-          {errors.vehicleType && (
+        <motion.div className="space-y-4" variants={itemVariants}>
+          <Label htmlFor="licensePlate" className="text-sm font-medium">
+            License Plate Number
+          </Label>
+          <div className="relative">
+            <Car className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="licensePlate"
+              placeholder="e.g., ABC 1234"
+              className={`pl-10 ${errors.licensePlate ? "border-red-500" : ""}`}
+              value={licensePlate}
+              onChange={(e) => setLicensePlate(e.target.value)}
+            />
+          </div>
+          {errors.licensePlate && (
             <motion.p className="text-sm text-red-500" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {errors.vehicleType}
+              {errors.licensePlate}
             </motion.p>
           )}
         </motion.div>
@@ -173,56 +256,85 @@ export function DriverSignUp({ userData }: DriverSignUpProps) {
           </div>
 
           <div className="space-y-3">
-            {documents.map((doc, index) => (
-              <div
+            <DocumentUploader
+              documentName={driversLicense.name}
+              currentDocument={driversLicense}
+              onDocumentUpdate={(documentInfo) => setDriversLicense(documentInfo)}
+              folder="food-ordering-system/driver-documents"
+            />
+            <DocumentUploader
+              documentName={vehicleRegistration.name}
+              currentDocument={vehicleRegistration}
+              onDocumentUpdate={(documentInfo) => setVehicleRegistration(documentInfo)}
+              folder="food-ordering-system/driver-documents"
+            />
+            <DocumentUploader
+              documentName={vehicleInsurance.name}
+              currentDocument={vehicleInsurance}
+              onDocumentUpdate={(documentInfo) => setVehicleInsurance(documentInfo)}
+              folder="food-ordering-system/driver-documents"
+            />
+            {additionalDocuments.map((doc, index) => (
+              <DocumentUploader
                 key={index}
-                className={`p-4 border rounded-lg ${doc.file ? "border-green-500 bg-green-50" : "border-gray-200"}`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <FileText className={`h-5 w-5 mr-2 ${doc.file ? "text-green-500" : "text-gray-400"}`} />
-                    <span>{doc.name}</span>
-                  </div>
-                  <div>
-                    <Label
-                      htmlFor={`document-${index}`}
-                      className="px-3 py-1 text-xs rounded-full bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
-                    >
-                      {doc.file ? "Change" : "Upload"}
-                    </Label>
-                    <Input
-                      id={`document-${index}`}
-                      type="file"
-                      accept="image/*,.pdf"
-                      className="sr-only"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] || null
-                        handleDocumentChange(index, file)
-                      }}
-                    />
-                  </div>
-                </div>
-                {doc.file && (
-                  <div className="mt-2 text-xs text-green-600 flex items-center">
-                    <Check className="h-3 w-3 mr-1" />
-                    {doc.file.name}
-                  </div>
-                )}
-              </div>
+                documentName={doc.name}
+                currentDocument={doc}
+                onDocumentUpdate={(documentInfo) => updateAdditionalDocument(index, documentInfo)}
+                folder="food-ordering-system/driver-documents"
+              />
             ))}
 
             <Button
               type="button"
               variant="outline"
               className="w-full"
-              onClick={() => {
-                setDocuments([...documents, { name: "", file: null }])
-              }}
+              onClick={addDocument}
             >
               <Upload className="mr-2 h-4 w-4" />
               Add Another Document
             </Button>
           </div>
+        </motion.div>
+
+        <motion.div className="space-y-2" variants={itemVariants}>
+          <Label htmlFor="location" className="text-sm font-medium">
+            Your Home Base Location
+          </Label>
+          <div className="relative">
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="location"
+              placeholder="Select your primary location"
+              className={`pl-10 ${errors.location ? "border-red-500" : ""} ${
+                locationConfirmed ? "pr-10 border-green-500" : ""
+              }`}
+              value={location}
+              readOnly
+            />
+            {locationConfirmed && (
+              <Check className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+            )}
+          </div>
+          {errors.location && (
+            <motion.p className="text-sm text-red-500" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              {errors.location}
+            </motion.p>
+          )}
+          {errors.locationConfirmed && !errors.location && (
+            <motion.p className="text-sm text-red-500" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              {errors.locationConfirmed}
+            </motion.p>
+          )}
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full flex items-center justify-center mt-2"
+            onClick={() => setShowMap(true)}
+          >
+            <MapPin className="mr-2 h-4 w-4" />
+            {locationConfirmed ? "Change Location" : "Select on Map"}
+          </Button>
         </motion.div>
 
         <motion.div variants={itemVariants}>
@@ -232,23 +344,20 @@ export function DriverSignUp({ userData }: DriverSignUpProps) {
         </motion.div>
       </motion.form>
 
-      <Modal isOpen={showVehicleTypeModal} onClose={() => setShowVehicleTypeModal(false)} title="Select Vehicle Type">
-        <div className="space-y-3">
-          {vehicleTypes.map((type, index) => (
-            <motion.button
-              key={type.id}
-              className="w-full p-3 border rounded-lg flex items-center hover:border-primary hover:bg-primary/5 transition-colors"
-              onClick={() => handleVehicleTypeSelect(type.name)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Car className="h-5 w-5 mr-3 text-primary" />
-              <span>{type.name}</span>
-            </motion.button>
-          ))}
+      <Modal 
+        isOpen={showMap} 
+        onClose={() => setShowMap(false)} 
+        title="Select Home Base Location"
+      >
+        <div className="space-y-4">
+          <MapSelector 
+            height="350px" 
+            onConfirmLocation={(selectedLocation) => {
+              const formattedLocation = `Lat: ${selectedLocation.lat}, Lng: ${selectedLocation.lng}`;
+              setLocation(formattedLocation);
+              confirmLocationSelection();
+            }} 
+          />
         </div>
       </Modal>
 
@@ -261,11 +370,38 @@ export function DriverSignUp({ userData }: DriverSignUpProps) {
       >
         <div className="text-center">
           <p className="mb-4">
-            Your driver account has been created successfully! We will review your documents and get back to you soon.
+            Your driver account has been created successfully! We will review your documents and get back to you
+            soon.
           </p>
-          <Button onClick={() => (window.location.href = "/dashboard")} className="w-full">
+          <Button onClick={() => (window.location.href = "/driver")} className="w-full">
             Go to Dashboard
           </Button>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showVehicleSelector}
+        onClose={() => setShowVehicleSelector(false)}
+        title="Select Vehicle Type"
+      >
+        <div className="space-y-4">
+          <Input
+            placeholder="Search vehicle types..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <div className="space-y-2">
+            {filteredVehicleTypes.map((type) => (
+              <Button
+                key={type.id}
+                variant="outline"
+                className="w-full"
+                onClick={() => selectVehicleType(type.id, type.type)}
+              >
+                {type.type}
+              </Button>
+            ))}
+          </div>
         </div>
       </Modal>
     </>

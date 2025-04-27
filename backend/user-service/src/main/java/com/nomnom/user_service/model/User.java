@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
+import com.nomnom.user_service.enums.UserStatus;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -43,8 +44,10 @@ public abstract class User {
     @JsonProperty("userType")
     private String userType;
 
-    private String status;
+    @JsonProperty("userStatus")
+    private UserStatus userStatus = UserStatus.OFFLINE;
     
     private String profilePicture;
 
+    private String profilePictureUrl;
 }

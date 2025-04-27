@@ -2,16 +2,17 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Eye } from "lucide-react"
+import { MoreHorizontal, Eye, Trash2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 interface CustomersTableProps {
   customers: any[]
   onViewDetails: (customer: any) => void
+  onDelete?: (customer: any) => void
 }
 
-export function CustomersTable({ customers, onViewDetails }: CustomersTableProps) {
+export function CustomersTable({ customers, onViewDetails, onDelete }: CustomersTableProps) {
   return (
     <div className="rounded-md border">
       <Table>
@@ -69,6 +70,15 @@ export function CustomersTable({ customers, onViewDetails }: CustomersTableProps
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
+                      {onDelete && (
+                        <DropdownMenuItem 
+                          className="text-destructive focus:text-destructive" 
+                          onClick={() => onDelete(customer)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

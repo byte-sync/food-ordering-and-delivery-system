@@ -4,31 +4,35 @@ import type React from "react"
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { OtpInput } from "./otp-input"
+import { otpSchema } from "@/validators/auth"
 
 interface OtpStepProps {
   onSubmit: (otp: string) => void
   onResendOtp: () => void
+  disabled?: boolean
 }
 
-export function OtpStep({ onSubmit, onResendOtp }: OtpStepProps) {
+export function OtpStep({ onSubmit, onResendOtp, disabled = false }: OtpStepProps) {
   const [otp, setOtp] = useState("")
   const [errors, setErrors] = useState<{ otp?: string }>({})
 
   const validateOtp = () => {
-    const newErrors = { ...errors }
-    delete newErrors.otp
-
-    if (!otp || otp.length !== 6) {
-      newErrors.otp = "Please enter a valid 6-digit code"
+    try {
+      otpSchema.parse({ otp });
+      setErrors({});
+      return true;
+    } catch (error: any) {
+      const formattedErrors = error.format ? error.format() : {};
+      setErrors({
+        otp: formattedErrors.otp?._errors[0] || "Invalid OTP"
+      });
+      return false;
     }
-
-    setErrors(newErrors)
-    return !newErrors.otp
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -86,7 +90,13 @@ export function OtpStep({ onSubmit, onResendOtp }: OtpStepProps) {
         <Label htmlFor="otp" className="text-sm font-medium">
           Verification Code
         </Label>
-        <OtpInput value={otp} onChange={setOtp} numInputs={6} hasError={!!errors.otp} />
+        <OtpInput 
+          value={otp} 
+          onChange={setOtp} 
+          numInputs={6} 
+          hasError={!!errors.otp}
+          disabled={disabled}
+        />
         {errors.otp && (
           <motion.p className="text-sm text-red-500" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             {errors.otp}
@@ -95,15 +105,29 @@ export function OtpStep({ onSubmit, onResendOtp }: OtpStepProps) {
       </motion.div>
 
       <motion.div variants={itemVariants}>
-        <Button type="submit" className="w-full">
-          Verify Code
-          <ArrowRight className="ml-2 h-4 w-4" />
+        <Button type="submit" className="w-full" disabled={disabled}>
+          {disabled ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Verifying...
+            </>
+          ) : (
+            <>
+              Verify Code
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </>
+          )}
         </Button>
       </motion.div>
 
       <motion.div className="text-center text-sm" variants={itemVariants}>
         Didn&apos;t receive a code?{" "}
-        <button type="button" className="text-primary font-medium hover:underline" onClick={onResendOtp}>
+        <button 
+          type="button" 
+          className="text-primary font-medium hover:underline disabled:opacity-50 disabled:pointer-events-none" 
+          onClick={onResendOtp}
+          disabled={disabled}
+        >
           Resend
         </button>
       </motion.div>

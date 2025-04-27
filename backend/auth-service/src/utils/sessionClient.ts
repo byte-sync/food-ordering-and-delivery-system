@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Get the Session Service URL from environment variables
-const SESSION_SERVICE_URL = process.env.SESSION_SERVICE_URL || 'http://localhost:5003';
+const SESSION_SERVICE_URL = process.env.SESSION_SERVICE_URL || 'http://localhost:5007';
 console.log('Session service URL:', SESSION_SERVICE_URL); // Log the URL being used
 
 /**
@@ -23,7 +23,13 @@ export const createSession = async (userId: string, ipAddress: string, device: s
     });
     
     console.log('Session creation successful:', response.data);
-    return response.data;
+    
+    // Make sure we're properly extracting the sessionId and token from the response
+    // This ensures we have the correct structure regardless of how the session service formats its response
+    return {
+      sessionId: response.data.sessionId || response.data.id || response.data._id,
+      token: response.data.token || response.data.sessionToken
+    };
   } catch (error: any) {
     console.error('Full error details:', {
       message: error.message,

@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Modal } from "@/components/auth/modal"
 import { MapSelector } from "@/components/ui/map-selector"
-import { useLocationStore } from "@/stores/location-store" 
+import { useAtom } from "jotai"
+import { locationAtom, locationSelectedAtom, showMapAtom, toggleMapAtom } from "@/atoms/location-atoms"
+import { userService } from "@/services/user-service"
 
 interface CustomerSignUpProps {
   userData: {
@@ -19,22 +21,26 @@ interface CustomerSignUpProps {
     lastName: string
     phone: string
     profileImage: string | null
+    password: string
   }
 }
 
 export function CustomerSignUp({ userData }: CustomerSignUpProps) {
-  // Use location store
-  const { location, locationSelected: storeLocationSelected, toggleMap, showMap } = useLocationStore()
+  // Use location atoms
+  const [location] = useAtom(locationAtom)
+  const [locationConfirmed, setLocationConfirmed] = useState(false)
+  const [locationSelected] = useAtom(locationSelectedAtom)
+  const [showMap] = useAtom(showMapAtom)
+  const [, toggleMapState] = useAtom(toggleMapAtom)
   
   // Local state
-  const [locationConfirmed, setLocationConfirmed] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [errors, setErrors] = useState<{ location?: string }>({})
 
-  // Sync location confirmed state with store
+  // Sync location confirmed state with atom
   useEffect(() => {
-    setLocationConfirmed(storeLocationSelected)
-  }, [storeLocationSelected])
+    setLocationConfirmed(locationSelected)
+  }, [locationSelected])
 
   const validateLocation = () => {
     const newErrors: { location?: string } = {}
@@ -47,17 +53,41 @@ export function CustomerSignUp({ userData }: CustomerSignUpProps) {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (validateLocation() && locationConfirmed) {
-      // Handle sign up logic
-      console.log("Customer sign up with:", {
-        ...userData,
-        location,
+      try {
+        const registrationData = {
+          // Common user data
+          email: userData.email,
+          password: userData.password,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          phone: userData.phone,
+          profilePictureUrl: userData.profileImage,
+          
+          // Customer specific data
+          locationCoordinates: {
+            lat: location.lat,
+            lng: location.lng,
+            // address: location.address
+          }
+        }
+
+        // Call the registration service
+        await userService.register(registrationData, "customer")
+        
+        setShowSuccessModal(true)
+      } catch (error: any) {
+        console.error("Registration failed:", error)
+        setErrors({
+          location: error.response?.data?.message || "Registration failed. Please try again."
+        })
+      }
+    } else if (!locationConfirmed && location.address) {
+      setErrors({
+        location: "Please confirm your location first",
       })
-      setShowSuccessModal(true)
-    } else if (!locationConfirmed) {
-      toggleMap(true)
     }
   }
 
@@ -120,7 +150,7 @@ export function CustomerSignUp({ userData }: CustomerSignUpProps) {
             type="button"
             variant="outline"
             className="w-full mt-2 flex items-center justify-center"
-            onClick={() => toggleMap(true)}
+            onClick={() => toggleMapState(true)}
           >
             <MapPin className="mr-2 h-4 w-4" />
             {locationConfirmed ? "Change Location" : "Select on Map"}
@@ -136,14 +166,14 @@ export function CustomerSignUp({ userData }: CustomerSignUpProps) {
 
       <Modal 
         isOpen={showMap} 
-        onClose={() => toggleMap(false)} 
+        onClose={() => toggleMapState(false)} 
         title="Select Delivery Address"
       >
         <div className="space-y-4">
           <MapSelector 
             height="350px" 
             onConfirmLocation={() => {
-              toggleMap(false);
+              toggleMapState(false);
               setLocationConfirmed(true);
             }} 
           />
@@ -158,9 +188,11 @@ export function CustomerSignUp({ userData }: CustomerSignUpProps) {
         iconClassName="text-green-500"
       >
         <div className="text-center">
-          <p className="mb-4">Your customer account has been created successfully!</p>
-          <Button onClick={() => (window.location.href = "/dashboard")} className="w-full">
-            Go to Dashboard
+          <p className="mb-4">
+            Your customer account has been created successfully! You can now enjoy ordering food from our platform.
+          </p>
+          <Button onClick={() => (window.location.href = "/customer/browse")} className="w-full">
+            Start Browsing
           </Button>
         </div>
       </Modal>

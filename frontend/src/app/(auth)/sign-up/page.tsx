@@ -12,7 +12,16 @@ import { DriverSignUp } from "@/components/auth/sign-up/driver-signup"
 import { RestaurantSignUp } from "@/components/auth/sign-up/restaurant-signup"
 import { UserTypeSelector } from "@/components/auth/user-type"
 
-
+interface CustomerSignUpProps {
+  userData: {
+    email: string
+    firstName: string
+    lastName: string
+    phone: string
+    profileImage: string | null
+    password: string
+  }
+}
 
 type UserType = "customer" | "driver" | "restaurant" | null
 
@@ -38,15 +47,12 @@ export default function SignUp() {
     firstName: string,
     lastName: string,
     phone: string,
-    profileImage: File | null,
+    profileImage: string | null,
   ) => {
     setFirstName(firstName)
     setLastName(lastName)
     setPhone(phone)
-    setProfileImage(profileImage)
-    if (profileImage) {
-      setProfileImageUrl(URL.createObjectURL(profileImage))
-    }
+    setProfileImageUrl(profileImage)
     setShowUserTypeModal(true)
   }
 
@@ -96,6 +102,7 @@ export default function SignUp() {
               <CustomerSignUp
                 userData={{
                   email,
+                  password,
                   firstName,
                   lastName,
                   phone,
@@ -108,6 +115,7 @@ export default function SignUp() {
               <DriverSignUp
                 userData={{
                   email,
+                  password,
                   firstName,
                   lastName,
                   phone,
@@ -120,6 +128,7 @@ export default function SignUp() {
               <RestaurantSignUp
                 userData={{
                   email,
+                  password,
                   firstName,
                   lastName,
                   phone,

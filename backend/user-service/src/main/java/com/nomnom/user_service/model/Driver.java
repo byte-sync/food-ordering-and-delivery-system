@@ -1,5 +1,6 @@
 package com.nomnom.user_service.model;
 
+import com.nomnom.user_service.enums.DriverStatus;
 import lombok.*;
 import org.springframework.data.annotation.TypeAlias;
 import org.springframework.data.geo.Point;
@@ -18,9 +19,8 @@ import java.util.List;
 public class Driver extends User {
     private String vehicleTypeId;
     private String vehicleNumber;
-    private int deliveryStatus;
     private List<DocumentInfo> vehicleDocuments;
-    private String driverStatus;
-    private Point currentLocation;
-    private boolean isActive;
+    private DriverStatus driverStatus = DriverStatus.OFFLINE;
+    private Point location;
+    private boolean isActive = false ;
 }

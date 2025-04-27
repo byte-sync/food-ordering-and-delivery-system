@@ -4,35 +4,35 @@ import type React from "react"
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { PasswordInput } from "../password-input"
+import { newPasswordSchema } from "@/validators/auth"
 
 interface ResetPasswordStepProps {
   onSubmit: (password: string, confirmPassword: string) => void
+  disabled?: boolean
 }
 
-export function ResetPasswordStep({ onSubmit }: ResetPasswordStepProps) {
+export function ResetPasswordStep({ onSubmit, disabled = false }: ResetPasswordStepProps) {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({})
 
   const validatePassword = () => {
-    const newErrors: { password?: string; confirmPassword?: string } = {}
-
-    if (!password) {
-      newErrors.password = "Password is required"
-    } else if (password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters"
+    try {
+      newPasswordSchema.parse({ password, confirmPassword });
+      setErrors({});
+      return true;
+    } catch (error: any) {
+      const formattedErrors = error.format ? error.format() : {};
+      setErrors({
+        password: formattedErrors.password?._errors[0],
+        confirmPassword: formattedErrors.confirmPassword?._errors[0],
+      });
+      return false;
     }
-
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -93,6 +93,7 @@ export function ResetPasswordStep({ onSubmit }: ResetPasswordStepProps) {
           value={password}
           onChange={setPassword}
           error={errors.password}
+          disabled={disabled}
         />
       </motion.div>
 
@@ -103,13 +104,23 @@ export function ResetPasswordStep({ onSubmit }: ResetPasswordStepProps) {
           value={confirmPassword}
           onChange={setConfirmPassword}
           error={errors.confirmPassword}
+          disabled={disabled}
         />
       </motion.div>
 
       <motion.div variants={itemVariants}>
-        <Button type="submit" className="w-full">
-          Reset Password
-          <ArrowRight className="ml-2 h-4 w-4" />
+        <Button type="submit" className="w-full" disabled={disabled}>
+          {disabled ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Resetting Password...
+            </>
+          ) : (
+            <>
+              Reset Password
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </>
+          )}
         </Button>
       </motion.div>
     </motion.form>

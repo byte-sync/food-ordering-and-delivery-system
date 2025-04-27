@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/restaurant-types")
+@RequestMapping("/api/restaurant-types")
 @RequiredArgsConstructor
 public class RestaurantTypeController {
     private final RestaurantTypeService restaurantTypeService;

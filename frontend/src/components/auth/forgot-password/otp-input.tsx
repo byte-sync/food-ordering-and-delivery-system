@@ -10,9 +10,10 @@ interface OtpInputProps {
   onChange: (value: string) => void
   numInputs: number
   hasError?: boolean
+  disabled?: boolean
 }
 
-export function OtpInput({ value, onChange, numInputs = 6, hasError = false }: OtpInputProps) {
+export function OtpInput({ value, onChange, numInputs = 6, hasError = false, disabled = false }: OtpInputProps) {
   const [activeInput, setActiveInput] = useState(0)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
@@ -31,7 +32,9 @@ export function OtpInput({ value, onChange, numInputs = 6, hasError = false }: O
   const focusInput = (inputIndex: number) => {
     const selectedIndex = Math.max(Math.min(numInputs - 1, inputIndex), 0)
     setActiveInput(selectedIndex)
-    inputRefs.current[selectedIndex]?.focus()
+    if (!disabled) {
+      inputRefs.current[selectedIndex]?.focus()
+    }
   }
 
   const handleOnFocus = (index: number) => {
@@ -70,6 +73,8 @@ export function OtpInput({ value, onChange, numInputs = 6, hasError = false }: O
 
   const handleOnPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault()
+    if (disabled) return;
+    
     const pastedData = e.clipboardData.getData("text/plain").trim().slice(0, numInputs).split("")
 
     if (pastedData) {
@@ -90,8 +95,10 @@ export function OtpInput({ value, onChange, numInputs = 6, hasError = false }: O
 
   useEffect(() => {
     inputRefs.current = inputRefs.current.slice(0, numInputs)
-    focusInput(0)
-  }, [numInputs])
+    if (!disabled) {
+      focusInput(0)
+    }
+  }, [numInputs, disabled])
 
   const renderInputs = () => {
     const otp = getOtpValue()
@@ -117,12 +124,13 @@ export function OtpInput({ value, onChange, numInputs = 6, hasError = false }: O
             maxLength={1}
             className={`w-full h-full text-center text-xl font-semibold rounded-xl border-2 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
               hasError ? "border-red-500 focus:border-red-500" : "border-gray-200 focus:border-primary"
-            }`}
+            } ${disabled ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""}`}
             value={otp[i] || ""}
             onChange={handleOnChange}
             onKeyDown={handleOnKeyDown}
             onFocus={() => handleOnFocus(i)}
             onPaste={handleOnPaste}
+            disabled={disabled}
           />
         </motion.div>,
       )

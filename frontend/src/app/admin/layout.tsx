@@ -6,14 +6,18 @@ import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { Sidebar } from "@/components/admin/sidebar"
 import { MobileNavbar } from "@/components/admin/mobile-navbar"
-import { useMobile } from "@/hooks/use-mobile"
+import { useMobile } from "@/hooks/useMobile"
 import { TopNavbar } from "@/components/admin/top-navbar"
+import { useRouteProtection } from "@/hooks/useRouteProtection"
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Apply route protection to ensure only admins can access
+  useRouteProtection();
+  
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isMobile = useMobile()
   const pathname = usePathname()

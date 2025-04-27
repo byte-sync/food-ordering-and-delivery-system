@@ -1,30 +1,26 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { ArrowRight, User, Phone, Upload } from "lucide-react"
-
+import { User, Phone } from "lucide-react"
+import { ProfileImageUploader } from "@/components/user-service/profile/profile-image-uploader"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { FormInput } from "../form-input"
 
 interface PersonalDetailsStepProps {
-  onSubmit: (firstName: string, lastName: string, phone: string, profileImage: File | null) => void
+  onSubmit: (firstName: string, lastName: string, phone: string, profileImage: string | null) => void
 }
 
 export function PersonalDetailsStep({ onSubmit }: PersonalDetailsStepProps) {
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [phone, setPhone] = useState("")
-  const [profileImage, setProfileImage] = useState<File | null>(null)
-  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null)
-  const [errors, setErrors] = useState<{ firstName?: string; lastName?: string; phone?: string }>({})
+  const [profileImage, setProfileImage] = useState<string | null>(null)
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
   const validateForm = () => {
-    const newErrors: { firstName?: string; lastName?: string; phone?: string } = {}
+    const newErrors: { [key: string]: string } = {}
 
     if (!firstName) {
       newErrors.firstName = "First name is required"
@@ -51,12 +47,8 @@ export function PersonalDetailsStep({ onSubmit }: PersonalDetailsStepProps) {
     }
   }
 
-  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      setProfileImage(file)
-      setProfileImageUrl(URL.createObjectURL(file))
-    }
+  const handleProfileImageUpdate = (imageUrl: string) => {
+    setProfileImage(imageUrl)
   }
 
   const containerVariants = {
@@ -95,7 +87,6 @@ export function PersonalDetailsStep({ onSubmit }: PersonalDetailsStepProps) {
 
   return (
     <motion.form
-      key="step2"
       onSubmit={handleSubmit}
       className="space-y-6"
       variants={containerVariants}
@@ -103,83 +94,70 @@ export function PersonalDetailsStep({ onSubmit }: PersonalDetailsStepProps) {
       animate="visible"
       exit="exit"
     >
-      <motion.div className="grid grid-cols-2 gap-4" variants={itemVariants}>
-        <div className="space-y-2">
-          <FormInput
-            id="firstName"
-            label="First Name"
-            placeholder="John"
-            value={firstName}
-            onChange={setFirstName}
-            error={errors.firstName}
-            icon={<User className="h-4 w-4" />}
-          />
-        </div>
-        <div className="space-y-2">
-          <FormInput
-            id="lastName"
-            label="Last Name"
-            placeholder="Doe"
-            value={lastName}
-            onChange={setLastName}
-            error={errors.lastName}
-            icon={<User className="h-4 w-4" />}
-          />
-        </div>
+      <motion.div className="flex flex-col items-center space-y-4" variants={itemVariants}>
+        <Label className="text-sm font-medium">Profile Picture</Label>
+        <ProfileImageUploader 
+          currentImage={profileImage || "/placeholder.svg"} 
+          onImageUpdate={handleProfileImageUpdate} 
+        />
+        <p className="text-xs text-muted-foreground">Upload a profile picture (optional)</p>
       </motion.div>
 
-      <motion.div variants={itemVariants}>
-        <FormInput
-          id="phone"
-          label="Phone Number"
-          placeholder="(123) 456-7890"
-          value={phone}
-          onChange={setPhone}
-          error={errors.phone}
-          icon={<Phone className="h-4 w-4" />}
-        />
+      <motion.div className="grid grid-cols-2 gap-4" variants={itemVariants}>
+        <div className="space-y-2">
+          <Label htmlFor="firstName" className="text-sm font-medium">
+            First Name
+          </Label>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="firstName"
+              placeholder="e.g., John"
+              className={`pl-10 ${errors.firstName ? "border-red-500" : ""}`}
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+            />
+          </div>
+          {errors.firstName && <p className="text-sm text-red-500">{errors.firstName}</p>}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="lastName" className="text-sm font-medium">
+            Last Name
+          </Label>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="lastName"
+              placeholder="e.g., Doe"
+              className={`pl-10 ${errors.lastName ? "border-red-500" : ""}`}
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+            />
+          </div>
+          {errors.lastName && <p className="text-sm text-red-500">{errors.lastName}</p>}
+        </div>
       </motion.div>
 
       <motion.div className="space-y-2" variants={itemVariants}>
-        <Label htmlFor="profileImage" className="text-sm font-medium">
-          Profile Image (Optional)
+        <Label htmlFor="phone" className="text-sm font-medium">
+          Phone Number
         </Label>
-        <div className="flex items-center space-x-4">
-          <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200">
-            {profileImageUrl ? (
-              <img
-                src={profileImageUrl || "/placeholder.svg"}
-                alt="Profile preview"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <User className="h-8 w-8 text-gray-400" />
-            )}
-          </div>
-          <div className="flex-1">
-            <Label
-              htmlFor="profileImage"
-              className="flex items-center justify-center w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Image
-            </Label>
-            <Input
-              id="profileImage"
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={handleProfileImageChange}
-            />
-            <p className="mt-1 text-xs text-muted-foreground">JPG, PNG or GIF. Max 2MB.</p>
-          </div>
+        <div className="relative">
+          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            id="phone"
+            placeholder="e.g., 123-456-7890"
+            className={`pl-10 ${errors.phone ? "border-red-500" : ""}`}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
         </div>
+        {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
       </motion.div>
 
       <motion.div variants={itemVariants}>
         <Button type="submit" className="w-full">
           Continue
-          <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </motion.div>
     </motion.form>

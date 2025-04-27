@@ -6,14 +6,18 @@ import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { RestaurantSidebar } from "@/components/restaurant/restaurant-sidebar"
 import { RestaurantTopNavbar } from "@/components/restaurant/restaurant-top-navbar"
-import { useMobile } from "@/hooks/use-mobile"
+import { useMobile } from "@/hooks/useMobile"
 import { RestaurantMobileNavbar } from "@/components/restaurant/restaurant-mobile-navbar"
+import { useRouteProtection } from "@/hooks/useRouteProtection"
 
 export default function RestaurantLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Apply route protection to ensure only restaurants can access
+  useRouteProtection();
+  
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isMobile = useMobile()
   const pathname = usePathname()

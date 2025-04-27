@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
-import { useMobile } from "@/hooks/use-mobile"
+import { useMobile } from "@/hooks/useMobile"
 
 interface CustomerSidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   open?: boolean

@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/vehicle-types")
+@RequestMapping("/api/vehicle-types")
 @RequiredArgsConstructor
 public class VehicleTypeController {
     private final VehicleTypeService vehicleTypeService;

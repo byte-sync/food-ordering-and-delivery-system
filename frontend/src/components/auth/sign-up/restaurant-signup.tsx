@@ -2,20 +2,32 @@
 
 import type React from "react"
 
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Building, FileText, MapPin, Clock, UtensilsCrossed, Plus, Minus, Check, X } from "lucide-react"
+import { Building, FileText, MapPin, Clock, UtensilsCrossed, Plus, Minus, Check, X, Search, AlertCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Modal } from "@/components/auth/modal"
-import { useRestaurantStore } from "@/stores/restaurant-store"
 import { MapSelector } from "@/components/ui/map-selector"
+import { DocumentUploader } from "@/components/shared/document-uploader"
+import { userService, CuisineType, RestaurantType, RestaurantRegistrationData } from "@/services/user-service"
 
+type Day = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday"
+
+interface OperatingHours {
+  day: Day
+  isOpen: boolean
+  openTime: string
+  closeTime: string
+}
+
+// Update the interface to include password
 interface RestaurantSignUpProps {
   userData: {
     email: string
+    password: string
     firstName: string
     lastName: string
     phone: string
@@ -26,57 +38,101 @@ interface RestaurantSignUpProps {
 interface SelectedLocation {
   lat: number;
   lng: number;
+  address: string;
 }
 
 interface MapSelectorProps {
   height?: string;
-  onConfirmLocation?: (selectedLocation: { lat: number; lng: number }) => void;
+  onConfirmLocation?: (selectedLocation: { lat: number; lng: number; address: string }) => void;
 }
 
 export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
-  // Get state and actions from the store
-  const {
-    // Basic info
-    restaurantName,
-    address,
-    licenseNumber,
-    restaurantType,
-    cuisineTypes,
-    
-    // Operating hours
-    operatingHours,
-    
-    // Documents
-    documents,
-    
-    // Location
-    location,
-    locationConfirmed,
-    
-    // UI state
-    step,
-    showRestaurantTypeModal,
-    showCuisineTypesModal,
-    showMap,
-    showSuccessModal,
-    errors,
-    
-    // Actions
-    setRestaurantName,
-    setAddress,
-    setLicenseNumber,
-    setRestaurantType,
-    toggleCuisineType,
-    updateOperatingHours,
-    updateDocument,
-    addDocument,
-    setLocation,
-    confirmLocation,
-    setStep,
-    toggleModal,
-    validateStep,
-    clearErrors,
-  } = useRestaurantStore()
+  // Basic info state
+  const [restaurantName, setRestaurantName] = useState("")
+  const [licenseNumber, setLicenseNumber] = useState("")
+  const [restaurantType, setRestaurantType] = useState("")
+  const [cuisineTypes, setCuisineTypes] = useState<string[]>([])
+  
+  // States for database-fetched data
+  const [dbRestaurantTypes, setDbRestaurantTypes] = useState<RestaurantType[]>([])
+  const [dbCuisineTypes, setDbCuisineTypes] = useState<CuisineType[]>([])
+  const [isLoading, setIsLoading] = useState({
+    restaurantTypes: true,
+    cuisineTypes: true
+  })
+  const [loadError, setLoadError] = useState({
+    restaurantTypes: '',
+    cuisineTypes: ''
+  })
+  
+  // Search states for filtering restaurant and cuisine types
+  const [restaurantTypeSearch, setRestaurantTypeSearch] = useState("")
+  const [cuisineTypeSearch, setCuisineTypeSearch] = useState("")
+  
+  // Initial operating hours
+  const defaultOperatingHours: OperatingHours[] = [
+    { day: "monday", isOpen: true, openTime: "09:00", closeTime: "22:00" },
+    { day: "tuesday", isOpen: true, openTime: "09:00", closeTime: "22:00" },
+    { day: "wednesday", isOpen: true, openTime: "09:00", closeTime: "22:00" },
+    { day: "thursday", isOpen: true, openTime: "09:00", closeTime: "22:00" },
+    { day: "friday", isOpen: true, openTime: "09:00", closeTime: "23:00" },
+    { day: "saturday", isOpen: true, openTime: "10:00", closeTime: "23:00" },
+    { day: "sunday", isOpen: true, openTime: "10:00", closeTime: "22:00" },
+  ]
+  
+  // Document states - manage each document independently
+  const [businessLicense, setBusinessLicense] = useState<{ name: string; url: string }>({ name: "Business License", url: "" })
+  const [foodSafetyCertificate, setFoodSafetyCertificate] = useState<{ name: string; url: string }>({ name: "Food Safety Certificate", url: "" })
+  // Store additional documents in an array
+  const [additionalDocuments, setAdditionalDocuments] = useState<{ name: string; url: string }[]>([])
+  
+  // Operating hours state
+  const [operatingHours, setOperatingHours] = useState<OperatingHours[]>(defaultOperatingHours)
+  
+  // Location state
+  const [location, setLocation] = useState("")
+  const [locationConfirmed, setLocationConfirmed] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState<{lat: number; lng: number} | null>(null)
+  
+  // UI state
+  const [step, setStep] = useState(1)
+  const [showRestaurantTypeModal, setShowRestaurantTypeModal] = useState(false)
+  const [showCuisineTypesModal, setShowCuisineTypesModal] = useState(false)
+  const [showMap, setShowMap] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
+  const [isRegistering, setIsRegistering] = useState(false)
+  const [registrationError, setRegistrationError] = useState<string | null>(null)
+
+  // Fetch restaurant types and cuisine types from API
+  useEffect(() => {
+    const fetchRestaurantTypes = async () => {
+      try {
+        const types = await userService.getRestaurantTypes()
+        setDbRestaurantTypes(types)
+        setIsLoading(prev => ({ ...prev, restaurantTypes: false }))
+      } catch (error) {
+        console.error("Failed to fetch restaurant types:", error)
+        setLoadError(prev => ({ ...prev, restaurantTypes: 'Failed to load restaurant types' }))
+        setIsLoading(prev => ({ ...prev, restaurantTypes: false }))
+      }
+    }
+
+    const fetchCuisineTypes = async () => {
+      try {
+        const types = await userService.getCuisineTypes()
+        setDbCuisineTypes(types)
+        setIsLoading(prev => ({ ...prev, cuisineTypes: false }))
+      } catch (error) {
+        console.error("Failed to fetch cuisine types:", error)
+        setLoadError(prev => ({ ...prev, cuisineTypes: 'Failed to load cuisine types' }))
+        setIsLoading(prev => ({ ...prev, cuisineTypes: false }))
+      }
+    }
+
+    fetchRestaurantTypes()
+    fetchCuisineTypes()
+  }, [])
 
   const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -92,29 +148,205 @@ export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
     }
   }
 
-  const handleStep3Submit = (e: React.FormEvent) => {
+  const handleStep3Submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (validateStep(3)) {
-      // Handle sign up logic
-      console.log("Restaurant sign up with:", {
-        ...userData,
-        restaurantName,
-        address,
-        licenseNumber,
-        restaurantType,
-        cuisineTypes,
-        operatingHours,
-        documents,
-        location,
-      })
-      toggleModal('success', true)
+      setIsRegistering(true)
+      setRegistrationError(null)
+      
+      try {
+        // Find the selected restaurant type ID
+        const selectedRestaurantType = dbRestaurantTypes.find(rt => rt.type === restaurantType)
+        const restaurantTypeId = selectedRestaurantType?.id || ""
+        
+        // Find the selected cuisine type IDs
+        const selectedCuisineTypeIds = dbCuisineTypes
+          .filter(ct => cuisineTypes.includes(ct.name))
+          .map(ct => ct.id)
+          
+        // Format data for registration
+        const registrationData: RestaurantRegistrationData = {
+          // Common user data
+          email: userData.email,
+          password: userData.password, // Use the password passed from parent
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          phone: userData.phone,
+          profilePictureUrl: userData.profileImage, // Changed from profileImage to profilePictureUrl
+          
+          // Restaurant specific data
+          restaurantName: restaurantName,
+          licenseNumber: licenseNumber,
+          restaurantTypeId: restaurantTypeId,
+          cuisineTypeIds: selectedCuisineTypeIds,
+          operatingHours: operatingHours,
+          documents: [businessLicense, foodSafetyCertificate, ...additionalDocuments], 
+          location: location,
+          locationCoordinates: selectedLocation || undefined
+        }
+
+        // Call the registration service
+        await userService.register(registrationData, "restaurant")
+        
+        // Show success modal
+        setShowSuccessModal(true)
+        
+      } catch (error: any) {
+        console.error("Registration failed:", error)
+        setRegistrationError(error.response?.data?.message || "Registration failed. Please try again.")
+      } finally {
+        setIsRegistering(false)
+      }
     }
+  }
+
+  // Action functions
+  const handleRestaurantTypeSelect = (type: string) => {
+    setRestaurantType(type)
+    setShowRestaurantTypeModal(false)
+  }
+  
+  const toggleCuisineType = (type: string) => {
+    if (cuisineTypes.includes(type)) {
+      setCuisineTypes(cuisineTypes.filter(t => t !== type))
+    } else {
+      setCuisineTypes([...cuisineTypes, type])
+    }
+  }
+  
+  const updateOperatingHours = (index: number, field: keyof OperatingHours, value: any) => {
+    const updatedHours = [...operatingHours]
+    updatedHours[index] = { ...updatedHours[index], [field]: value }
+    setOperatingHours(updatedHours)
+  }
+  
+  const updateDocument = (index: number, documentInfo: { name: string; url: string }) => {
+    if (index === 0) {
+      setBusinessLicense(documentInfo);
+    } else if (index === 1) {
+      setFoodSafetyCertificate(documentInfo);
+    } else {
+      const updatedDocuments = [...additionalDocuments];
+      updatedDocuments[index - 2] = documentInfo;
+      setAdditionalDocuments(updatedDocuments);
+    }
+  };
+  
+  const addDocument = () => {
+    setAdditionalDocuments([...additionalDocuments, { name: "Additional Document", url: "" }]);
+  };
+  
+  const confirmLocationSelection = () => {
+    setLocationConfirmed(true)
+    setShowMap(false)
+  }
+  
+  const toggleModal = (modal: 'restaurantType' | 'cuisineTypes' | 'map' | 'success', isOpen: boolean) => {
+    switch (modal) {
+      case 'restaurantType':
+        setShowRestaurantTypeModal(isOpen)
+        break
+      case 'cuisineTypes':
+        setShowCuisineTypesModal(isOpen)
+        break
+      case 'map':
+        setShowMap(isOpen)
+        break
+      case 'success':
+        setShowSuccessModal(isOpen)
+        break
+    }
+  }
+  
+  const validateStep = (step: number) => {
+    const newErrors: { [key: string]: string } = {}
+    let isValid = true
+    
+    if (step === 1) {
+      if (!restaurantName) {
+        newErrors.restaurantName = "Restaurant name is required"
+        isValid = false
+      }
+      
+      if (!licenseNumber) {
+        newErrors.licenseNumber = "License number is required"
+        isValid = false
+      }
+      
+      if (!restaurantType) {
+        newErrors.restaurantType = "Restaurant type is required"
+        isValid = false
+      }
+      
+      if (cuisineTypes.length === 0) {
+        newErrors.cuisineTypes = "At least one cuisine type is required"
+        isValid = false
+      }
+    } 
+    else if (step === 2) {
+      // Operating hours validation if needed
+      isValid = true
+    }
+    else if (step === 3) {
+      if (!businessLicense.url || businessLicense.url.trim() === "") {
+        newErrors.businessLicense = "Business license document is required";
+        isValid = false;
+      }
+      
+      if (!foodSafetyCertificate.url || foodSafetyCertificate.url.trim() === "") {
+        newErrors.foodSafetyCertificate = "Food safety certificate is required";
+        isValid = false;
+      }
+      
+      const hasInvalidAdditionalDocs = additionalDocuments.some(doc => (!doc.url || doc.url.trim() === ""));
+      if (additionalDocuments.length > 0 && hasInvalidAdditionalDocs) {
+        newErrors.additionalDocuments = "All additional documents must have files uploaded";
+        isValid = false;
+      }
+      
+      if (!location) {
+        newErrors.location = "Location is required"
+        isValid = false
+      }
+      
+      if (!locationConfirmed) {
+        newErrors.locationConfirmed = "Please confirm your location on the map"
+        isValid = false
+      }
+    }
+    
+    setErrors(newErrors)
+    return isValid
+  }
+  
+  const clearErrors = () => {
+    setErrors({})
+  }
+  
+  const resetStore = () => {
+    // Reset all state values to default
+    setRestaurantName("")
+    setLicenseNumber("")
+    setRestaurantType("")
+    setCuisineTypes([])
+    setOperatingHours(defaultOperatingHours)
+    setBusinessLicense({ name: "Business License", url: "" })
+    setFoodSafetyCertificate({ name: "Food Safety Certificate", url: "" })
+    setAdditionalDocuments([])
+    setLocation("")
+    setLocationConfirmed(false)
+    setStep(1)
+    setShowRestaurantTypeModal(false)
+    setShowCuisineTypesModal(false)
+    setShowMap(false)
+    setShowSuccessModal(false)
+    setErrors({})
   }
 
   const containerVariants = {
     hidden: { opacity: 0, x: 100 },
     visible: {
-      opacity: 1,
+      opacity: 1, 
       x: 0,
       transition: {
         type: "spring",
@@ -145,9 +377,9 @@ export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
     },
   }
 
-  const restaurantTypes = ["Fast Food", "Casual Dining", "Fine Dining", "Cafe", "Bakery", "Food Truck"]
-
-  const cuisineTypeOptions = [
+  // Fallback options in case API fails
+  const fallbackRestaurantTypes = ["Fast Food", "Casual Dining", "Fine Dining", "Cafe", "Bakery", "Food Truck"]
+  const fallbackCuisineTypes = [
     "Italian", "Chinese", "Indian", "Mexican", "Japanese", "Thai", 
     "American", "Mediterranean", "French", "Korean", "Vietnamese", "Greek",
   ]
@@ -174,24 +406,6 @@ export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
               {errors.restaurantName && (
                 <motion.p className="text-sm text-red-500" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                   {errors.restaurantName}
-                </motion.p>
-              )}
-            </motion.div>
-
-            <motion.div className="space-y-2" variants={itemVariants}>
-              <Label htmlFor="address" className="text-sm font-medium">
-                Address
-              </Label>
-              <Textarea
-                id="address"
-                placeholder="Full restaurant address"
-                className={`min-h-[80px] ${errors.address ? "border-red-500" : ""}`}
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
-              {errors.address && (
-                <motion.p className="text-sm text-red-500" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  {errors.address}
                 </motion.p>
               )}
             </motion.div>
@@ -370,42 +584,28 @@ export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
               </div>
 
               <div className="space-y-3">
-                {documents.map((doc, index) => (
-                  <div
-                    key={index}
-                    className={`p-4 border rounded-lg ${doc.file ? "border-green-500 bg-green-50" : "border-gray-200"}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <FileText className={`h-5 w-5 mr-2 ${doc.file ? "text-green-500" : "text-gray-400"}`} />
-                        <span>{doc.name}</span>
-                      </div>
-                      <div>
-                        <Label
-                          htmlFor={`document-${index}`}
-                          className="px-3 py-1 text-xs rounded-full bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
-                        >
-                          {doc.file ? "Change" : "Upload"}
-                        </Label>
-                        <Input
-                          id={`document-${index}`}
-                          type="file"
-                          accept="image/*,.pdf"
-                          className="sr-only"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0] || null
-                            updateDocument(index, file)
-                          }}
-                        />
-                      </div>
-                    </div>
-                    {doc.file && (
-                      <div className="mt-2 text-xs text-green-600 flex items-center">
-                        <Check className="h-3 w-3 mr-1" />
-                        {doc.file.name}
-                      </div>
-                    )}
-                  </div>
+                <DocumentUploader
+                  key={`document-${businessLicense.name}`}
+                  documentName={businessLicense.name}
+                  currentDocument={businessLicense}
+                  onDocumentUpdate={(documentInfo) => updateDocument(0, documentInfo)}
+                  folder="food-ordering-system/restaurant-documents"
+                />
+                <DocumentUploader
+                  key={`document-${foodSafetyCertificate.name}`}
+                  documentName={foodSafetyCertificate.name}
+                  currentDocument={foodSafetyCertificate}
+                  onDocumentUpdate={(documentInfo) => updateDocument(1, documentInfo)}
+                  folder="food-ordering-system/restaurant-documents"
+                />
+                {additionalDocuments.map((doc, index) => (
+                  <DocumentUploader
+                    key={`document-${doc.name}-${index}`}
+                    documentName={doc.name}
+                    currentDocument={doc}
+                    onDocumentUpdate={(documentInfo) => updateDocument(index + 2, documentInfo)}
+                    folder="food-ordering-system/restaurant-documents"
+                  />
                 ))}
 
                 <Button
@@ -459,9 +659,24 @@ export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
               </Button>
             </motion.div>
 
+            {registrationError && (
+              <motion.div 
+                className="p-3 border border-red-500 bg-red-50 rounded-md flex items-start"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <AlertCircle className="h-5 w-5 text-red-500 mr-2 mt-0.5" />
+                <p className="text-sm text-red-700">{registrationError}</p>
+              </motion.div>
+            )}
+
             <motion.div variants={itemVariants}>
-              <Button type="submit" className="w-full">
-                Complete Sign Up
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isRegistering}
+              >
+                {isRegistering ? "Creating Account..." : "Complete Sign Up"}
               </Button>
             </motion.div>
           </motion.form>
@@ -474,21 +689,32 @@ export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
         title="Select Restaurant Type"
       >
         <div className="space-y-3">
-          {restaurantTypes.map((type, index) => (
-            <motion.button
-              key={type}
-              className="w-full p-3 border rounded-lg flex items-center hover:border-primary hover:bg-primary/5 transition-colors"
-              onClick={() => setRestaurantType(type)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <UtensilsCrossed className="h-5 w-5 mr-3 text-primary" />
-              <span>{type}</span>
-            </motion.button>
-          ))}
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search restaurant types..."
+              className="pl-10"
+              value={restaurantTypeSearch}
+              onChange={(e) => setRestaurantTypeSearch(e.target.value)}
+            />
+          </div>
+          {(isLoading.restaurantTypes ? fallbackRestaurantTypes : dbRestaurantTypes.map(type => type.type))
+            .filter(type => type.toLowerCase().includes(restaurantTypeSearch.toLowerCase()))
+            .map((type, index) => (
+              <motion.button
+                key={type}
+                className="w-full p-3 border rounded-lg flex items-center hover:border-primary hover:bg-primary/5 transition-colors"
+                onClick={() => handleRestaurantTypeSelect(type)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <UtensilsCrossed className="h-5 w-5 mr-3 text-primary" />
+                <span>{type}</span>
+              </motion.button>
+            ))}
         </div>
       </Modal>
 
@@ -497,27 +723,40 @@ export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
         onClose={() => toggleModal('cuisineTypes', false)}
         title="Select Cuisine Types"
       >
-        <div className="grid grid-cols-2 gap-3">
-          {cuisineTypeOptions.map((type, index) => {
-            const isSelected = cuisineTypes.includes(type)
-            return (
-              <motion.button
-                key={type}
-                className={`p-3 border rounded-lg flex items-center justify-between transition-colors ${
-                  isSelected ? "border-primary bg-primary/5" : "hover:border-gray-300"
-                }`}
-                onClick={() => toggleCuisineType(type)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-              >
-                <span>{type}</span>
-                {isSelected && <Check className="h-4 w-4 text-primary" />}
-              </motion.button>
-            )
-          })}
+        <div className="space-y-3">
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search cuisine types..."
+              className="pl-10"
+              value={cuisineTypeSearch}
+              onChange={(e) => setCuisineTypeSearch(e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {(isLoading.cuisineTypes ? fallbackCuisineTypes : dbCuisineTypes.map(type => type.name))
+              .filter(type => type.toLowerCase().includes(cuisineTypeSearch.toLowerCase()))
+              .map((type, index) => {
+                const isSelected = cuisineTypes.includes(type)
+                return (
+                  <motion.button
+                    key={type}
+                    className={`p-3 border rounded-lg flex items-center justify-between transition-colors ${
+                      isSelected ? "border-primary bg-primary/5" : "hover:border-gray-300"
+                    }`}
+                    onClick={() => toggleCuisineType(type)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                  >
+                    <span>{type}</span>
+                    {isSelected && <Check className="h-4 w-4 text-primary" />}
+                  </motion.button>
+                )
+              })}
+          </div>
         </div>
         <div className="mt-4 flex justify-end">
           <Button onClick={() => toggleModal('cuisineTypes', false)} className="w-full">
@@ -534,10 +773,10 @@ export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
         <div className="space-y-4">
           <MapSelector 
             height="350px" 
-            onConfirmLocation={(selectedLocation: SelectedLocation): void => {
-              const formattedLocation = `Lat: ${selectedLocation.lat}, Lng: ${selectedLocation.lng}`;
-              setLocation(formattedLocation); // now receives a string
-              confirmLocation();
+            onConfirmLocation={(selectedLoc: SelectedLocation) => {
+              setLocation(selectedLoc.address);
+              setSelectedLocation({lat: selectedLoc.lat, lng: selectedLoc.lng});
+              setLocationConfirmed(true);
               toggleModal('map', false);
             }} 
           />

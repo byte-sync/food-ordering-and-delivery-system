@@ -1,7 +1,5 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,49 +13,66 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-interface DeleteAdminModalProps {
+interface DeleteUserModalProps {
   open: boolean
-  admin: any
+  userType: 'admin' | 'restaurant' | 'driver' | 'customer'
+  userName: string
   onClose: () => void
-  onConfirm: (password: string) => void
+  onConfirm: () => void
 }
 
-export function DeleteAdminModal({ open, admin, onClose, onConfirm }: DeleteAdminModalProps) {
-  const [password, setPassword] = useState("")
+export function DeleteUserModal({ 
+  open, 
+  userType, 
+  userName, 
+  onClose, 
+  onConfirm 
+}: DeleteUserModalProps) {
+  const [confirmText, setConfirmText] = useState("")
   const [error, setError] = useState("")
-
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!password) {
-      setError("Password is required")
+    if (confirmText.toLowerCase() !== "delete") {
+      setError("Please type 'delete' to confirm")
       return
     }
-    onConfirm(password)
-    setPassword("")
+    onConfirm()
+    setConfirmText("")
     setError("")
+  }
+
+  const getUserTypeTitle = () => {
+    switch(userType) {
+      case 'admin': return 'Admin';
+      case 'restaurant': return 'Restaurant';
+      case 'driver': return 'Driver';
+      case 'customer': return 'Customer';
+      default: return 'User';
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Delete Admin</DialogTitle>
+          <DialogTitle>Delete {getUserTypeTitle()}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete {admin?.firstName} {admin?.lastName}? This action cannot be undone.
+            Are you sure you want to delete {userName}? This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="password">Enter your password to confirm</Label>
+              <Label htmlFor="confirm-text">Type <strong>delete</strong> to confirm</Label>
               <Input
-                id="password"
-                type="password"
-                value={password}
+                id="confirm-text"
+                value={confirmText}
                 onChange={(e) => {
-                  setPassword(e.target.value)
+                  setConfirmText(e.target.value)
                   setError("")
                 }}
+                placeholder="delete"
                 required
               />
               {error && <p className="text-sm text-destructive">{error}</p>}

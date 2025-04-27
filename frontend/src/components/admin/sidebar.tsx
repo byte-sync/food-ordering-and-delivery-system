@@ -5,13 +5,13 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart3, ChevronDown, Home, Moon, Sun, Users, X } from "lucide-react"
+import { BarChart3, ChevronDown, Home, Moon, Settings, Sun, Users, X, UtensilsCrossed } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
-import { useMobile } from "@/hooks/use-mobile"
+import { useMobile } from "@/hooks/useMobile"
 import Image from "next/image"
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -24,6 +24,7 @@ export function Sidebar({ className, open, onClose, ...props }: SidebarProps) {
   const { theme, setTheme } = useTheme()
   const isMobile = useMobile()
   const [usersExpanded, setUsersExpanded] = useState(true)
+  const [settingsExpanded, setSettingsExpanded] = useState(true)
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark")
@@ -119,6 +120,34 @@ export function Sidebar({ className, open, onClose, ...props }: SidebarProps) {
             <BarChart3 className="h-5 w-5" />
             Analytics
           </Link>
+
+          <div className="py-2">
+            <button
+              onClick={() => setSettingsExpanded(!settingsExpanded)}
+              className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <div className="flex items-center gap-3">
+                <Settings className="h-5 w-5" />
+                Settings
+              </div>
+              <ChevronDown className={cn("h-4 w-4 transition-transform", settingsExpanded ? "rotate-180" : "")} />
+            </button>
+
+            {settingsExpanded && (
+              <div className="ml-4 mt-1 flex flex-col gap-1 pl-4 border-l">
+                <Link
+                  href="/admin/cuisine-types"
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+                    pathname === "/admin/cuisine-types" ? "bg-accent text-accent-foreground" : "transparent",
+                  )}
+                >
+                  <UtensilsCrossed className="h-4 w-4" />
+                  Cuisine Types
+                </Link>
+              </div>
+            )}
+          </div>
         </nav>
       </ScrollArea>
       <div className="border-t p-4">

@@ -7,13 +7,17 @@ import { usePathname } from "next/navigation"
 import { CustomerSidebar } from "@/components/customer/customer-sidebar"
 import { CustomerTopNavbar } from "@/components/customer/customer-top-navbar"
 import { CustomerMobileNavbar } from "@/components/customer/customer-mobile-navbar"
-import { useMobile } from "@/hooks/use-mobile"
+import { useMobile } from "@/hooks/useMobile"
+import { useRouteProtection } from "@/hooks/useRouteProtection"
 
 export default function CustomerLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Apply route protection to ensure only customers can access
+  useRouteProtection();
+  
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isMobile = useMobile()
   const pathname = usePathname()

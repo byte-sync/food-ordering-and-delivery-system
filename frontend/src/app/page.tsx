@@ -1,13 +1,45 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { getUserType, isAuthenticated } from "@/services/auth-service";
 import { Button } from "@/components/ui/button";
 import {
-  ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
+  ResizableHandle,
 } from "@/components/ui/resizable";
 
-import React from "react";
+export default function Home() {
+  const router = useRouter();
 
-const page = () => {
+  useEffect(() => {
+    // Check if user is already authenticated
+    if (isAuthenticated()) {
+      const userType = getUserType();
+
+      if (userType) {
+        // Redirect based on user type
+        switch (userType.toLowerCase()) {
+          case "admin":
+            router.push("/admin");
+            break;
+          case "customer":
+            router.push("/customer");
+            break;
+          case "restaurant":
+            router.push("/restaurant");
+            break;
+          case "driver":
+            router.push("/driver");
+            break;
+          default:
+            router.push("/browse");
+        }
+      }
+    }
+  }, [router]);
+
   return (
     <div>
       <ResizablePanelGroup direction="horizontal">
@@ -16,9 +48,6 @@ const page = () => {
         <Button>Hello</Button>
         <ResizablePanel>Two</ResizablePanel>
       </ResizablePanelGroup>
-      ;
     </div>
   );
-};
-
-export default page;
+}

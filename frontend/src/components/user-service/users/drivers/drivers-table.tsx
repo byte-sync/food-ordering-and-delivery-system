@@ -2,7 +2,7 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Eye, Pencil, Check, X } from "lucide-react"
+import { MoreHorizontal, Eye, Pencil, Check, X, Trash2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -13,9 +13,17 @@ interface DriversTableProps {
   onEdit: (driver: any) => void
   onApprove: (id: string) => void
   onReject: (id: string) => void
+  onDelete?: (driver: any) => void
 }
 
-export function DriversTable({ drivers, onViewDetails, onEdit, onApprove, onReject }: DriversTableProps) {
+export function DriversTable({ 
+  drivers, 
+  onViewDetails, 
+  onEdit, 
+  onApprove, 
+  onReject,
+  onDelete 
+}: DriversTableProps) {
   return (
     <div className="rounded-md border">
       <Table>
@@ -103,6 +111,15 @@ export function DriversTable({ drivers, onViewDetails, onEdit, onApprove, onReje
                             Reject
                           </DropdownMenuItem>
                         </>
+                      )}
+                      {onDelete && (
+                        <DropdownMenuItem 
+                          className="text-destructive focus:text-destructive" 
+                          onClick={() => onDelete(driver)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>

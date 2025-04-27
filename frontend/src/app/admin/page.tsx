@@ -2,6 +2,7 @@ import { DashboardStats } from "@/components/user-service/dashboard/dashboard-st
 import { PendingApprovals } from "@/components/user-service/dashboard/pending-approvals";
 import { QuickActions } from "@/components/user-service/dashboard/quick-action";
 import { RecentActivity } from "@/components/user-service/dashboard/recent-activity";
+import { DataFetchTest } from "@/components/shared/data-fetch-test";
 
 
 export default function DashboardPage() {
@@ -19,6 +20,12 @@ export default function DashboardPage() {
           <QuickActions />
           <PendingApprovals />
         </div>
+      </div>
+      
+      {/* API Data Fetch Test */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold mb-4">API Integration Test</h2>
+        <DataFetchTest />
       </div>
     </div>
   )

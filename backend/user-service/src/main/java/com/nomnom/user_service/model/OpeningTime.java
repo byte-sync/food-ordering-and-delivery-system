@@ -13,4 +13,5 @@ public class OpeningTime {
     private DayOfWeek day;
     private String openTime;
     private String closeTime;
+    private Boolean isOpen;
 }

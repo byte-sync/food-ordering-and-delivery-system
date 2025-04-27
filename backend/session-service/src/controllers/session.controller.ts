@@ -21,6 +21,7 @@ import logger from '../utils/logger';
  * Creates or extends a session for a user
  */
 export const createSession = async (req: Request, res: Response) => {
+  // TODO: Undefined Session
   try {
     const { userId, device, ipAddress } = CreateSessionSchema.parse(req.body);
     

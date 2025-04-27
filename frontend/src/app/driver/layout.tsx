@@ -6,14 +6,18 @@ import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { DriverTopNavbar } from "@/components/driver/driver-top-navbar"
 import { DriverMobileNavbar } from "@/components/driver/driver-mobile-navbar"
-import { useMobile } from "@/hooks/use-mobile"
+import { useMobile } from "@/hooks/useMobile"
 import { DriverSidebar } from "@/components/driver/driver-sidebar"
+import { useRouteProtection } from "@/hooks/useRouteProtection"
 
 export default function DriverLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Apply route protection to ensure only drivers can access
+  useRouteProtection();
+  
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isMobile = useMobile()
   const pathname = usePathname()

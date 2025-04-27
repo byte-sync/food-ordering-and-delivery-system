@@ -4,31 +4,33 @@ import type React from "react"
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { ArrowRight, Mail } from "lucide-react"
+import { ArrowRight, Mail, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { FormInput } from "../form-input"
+import { forgotPasswordSchema, type ForgotPasswordFormData } from "@/validators/auth"
 
 interface EmailStepProps {
   onSubmit: (email: string) => void
+  disabled?: boolean
 }
 
-export function EmailStep({ onSubmit }: EmailStepProps) {
+export function EmailStep({ onSubmit, disabled = false }: EmailStepProps) {
   const [email, setEmail] = useState("")
   const [errors, setErrors] = useState<{ email?: string }>({})
 
   const validateEmail = () => {
-    const newErrors = { ...errors }
-    delete newErrors.email
-
-    if (!email) {
-      newErrors.email = "Email is required"
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Email is invalid"
+    try {
+      forgotPasswordSchema.parse({ email });
+      setErrors({});
+      return true;
+    } catch (error: any) {
+      const formattedErrors = error.format ? error.format() : {};
+      setErrors({
+        email: formattedErrors.email?._errors[0] || "Invalid email"
+      });
+      return false;
     }
-
-    setErrors(newErrors)
-    return !newErrors.email
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -92,13 +94,23 @@ export function EmailStep({ onSubmit }: EmailStepProps) {
           onChange={setEmail}
           error={errors.email}
           icon={<Mail className="h-4 w-4" />}
+          disabled={disabled}
         />
       </motion.div>
 
       <motion.div variants={itemVariants}>
-        <Button type="submit" className="w-full">
-          Send Verification Code
-          <ArrowRight className="ml-2 h-4 w-4" />
+        <Button type="submit" className="w-full" disabled={disabled}>
+          {disabled ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              Send Verification Code
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </>
+          )}
         </Button>
       </motion.div>
     </motion.form>

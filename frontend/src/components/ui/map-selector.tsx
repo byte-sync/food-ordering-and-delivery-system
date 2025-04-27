@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useLocationStore } from '@/stores/location-store';
+import { useAtom } from 'jotai';
+import { locationAtom, confirmLocationAtom, setLocationAtom, LocationData } from '@/atoms/location-atoms';
 import dynamic from 'next/dynamic';
 import { MapPin } from 'lucide-react';
 
@@ -16,13 +17,6 @@ const MapComponent = dynamic(() => import('./map-component').then(mod => mod.Map
   ),
 });
 
-// Import or define LocationData interface
-interface LocationData {
-  lat: number;
-  lng: number;
-  address: string;
-}
-
 interface SelectedLocation {
   lat: number;
   lng: number;
@@ -35,14 +29,15 @@ interface MapSelectorProps {
 }
 
 export function MapSelector({ height = "400px", onConfirmLocation }: MapSelectorProps) {
-  const { location, setLocation, confirmLocation: storeConfirmLocation } = useLocationStore();
+  const [location, setLocation] = useAtom(locationAtom);
+  const [, confirmLocation] = useAtom(confirmLocationAtom);
   
   const handleLocationChange = (newLocation: LocationData) => {
     setLocation(newLocation);
   };
   
   const handleConfirm = () => {
-    storeConfirmLocation();
+    confirmLocation();
     if (onConfirmLocation) {
       onConfirmLocation(location);
     }

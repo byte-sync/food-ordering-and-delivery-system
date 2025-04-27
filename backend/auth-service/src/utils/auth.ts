@@ -15,3 +15,10 @@ export const generateToken = (userId: string) => {
     expiresIn: expiresIn
   } as jwt.SignOptions);
 };
+
+// Generate a 6-digit numeric OTP
+export const generateOtp = () => {
+  const min = 100000; // 6 digits (100000-999999)
+  const max = 999999;
+  return Math.floor(min + Math.random() * (max - min)).toString();
+};

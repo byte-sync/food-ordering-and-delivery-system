@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/cuisine-types")
+@RequestMapping("/api/cuisine-types")
 @RequiredArgsConstructor
 public class CuisineTypeController {
 

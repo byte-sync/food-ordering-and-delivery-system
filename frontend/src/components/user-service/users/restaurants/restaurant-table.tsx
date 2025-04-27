@@ -2,7 +2,7 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Eye, Pencil, Check, X } from "lucide-react"
+import { MoreHorizontal, Eye, Pencil, Check, X, Trash2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 
@@ -12,9 +12,17 @@ interface RestaurantsTableProps {
   onEdit: (restaurant: any) => void
   onApprove: (id: string) => void
   onReject: (id: string) => void
+  onDelete?: (restaurant: any) => void
 }
 
-export function RestaurantsTable({ restaurants, onViewDetails, onEdit, onApprove, onReject }: RestaurantsTableProps) {
+export function RestaurantsTable({ 
+  restaurants, 
+  onViewDetails, 
+  onEdit, 
+  onApprove, 
+  onReject,
+  onDelete
+}: RestaurantsTableProps) {
   return (
     <div className="rounded-md border">
       <Table>
@@ -83,6 +91,15 @@ export function RestaurantsTable({ restaurants, onViewDetails, onEdit, onApprove
                             Reject
                           </DropdownMenuItem>
                         </>
+                      )}
+                      {onDelete && (
+                        <DropdownMenuItem 
+                          className="text-destructive focus:text-destructive" 
+                          onClick={() => onDelete(restaurant)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>

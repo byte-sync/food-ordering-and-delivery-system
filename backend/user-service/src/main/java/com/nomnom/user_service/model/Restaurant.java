@@ -1,6 +1,7 @@
 package com.nomnom.user_service.model;
 
 
+import com.nomnom.user_service.enums.RestaurantStatus;
 import lombok.*;
 import org.springframework.data.annotation.TypeAlias;
 import org.springframework.data.geo.Point;
@@ -18,13 +19,13 @@ import java.util.List;
 @TypeAlias("RESTAURANT")
 public class Restaurant extends User {
     private String restaurantName;
-    private String restaurantAddress;
     private String restaurantLicenseNumber;
     private String restaurantTypeId;
     private String[] cuisineTypeIds;
     private List<DocumentInfo> restaurantDocuments;
     private List<OpeningTime> openingTimes;
-    private String restaurantStatus;
+    private RestaurantStatus restaurantStatus;
     private Point location;
-    private boolean isActive;
+    private String restaurantAddress;
+    private boolean isActive = false;
 }
