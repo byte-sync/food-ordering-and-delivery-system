@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Building, FileText, MapPin, Clock, UtensilsCrossed, Plus, Minus, Check, X, Search, AlertCircle } from "lucide-react"
+import { Building, FileText, MapPin, Clock, UtensilsCrossed, Plus, Minus, Check, X, Search, AlertCircle, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,16 +23,17 @@ interface OperatingHours {
   closeTime: string
 }
 
-// Update the interface to include password
 interface RestaurantSignUpProps {
-  userData: {
-    email: string
-    password: string
-    firstName: string
-    lastName: string
-    phone: string
-    profileImage: string | null
-  }
+  userData?: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    profileImage?: string | null;
+  };
+  isGoogleAuth?: boolean;
+  onSubmitSuccess?: (additionalData: any) => void;
 }
 
 interface SelectedLocation {
@@ -46,7 +47,11 @@ interface MapSelectorProps {
   onConfirmLocation?: (selectedLocation: { lat: number; lng: number; address: string }) => void;
 }
 
-export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
+export function RestaurantSignUp({ 
+  userData = { email: "", password: "", firstName: "", lastName: "", phone: "" },
+  isGoogleAuth = false,
+  onSubmitSuccess
+}: RestaurantSignUpProps) {
   // Basic info state
   const [restaurantName, setRestaurantName] = useState("")
   const [licenseNumber, setLicenseNumber] = useState("")
@@ -148,59 +153,55 @@ export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
     }
   }
 
-  const handleStep3Submit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (validateStep(3)) {
-      setIsRegistering(true)
-      setRegistrationError(null)
-      
+      setIsRegistering(true);
+      setRegistrationError(null);
+
+      const registrationData: RestaurantRegistrationData = {
+        email: userData.email,
+        password: userData.password || "",
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phone: userData.phone,
+        profilePictureUrl: userData.profileImage,
+        restaurantName: restaurantName,
+        licenseNumber: licenseNumber,
+        restaurantTypeId: dbRestaurantTypes.find(rt => rt.type === restaurantType)?.id || "",
+        cuisineTypeIds: dbCuisineTypes.filter(ct => cuisineTypes.includes(ct.name)).map(ct => ct.id),
+        operatingHours: operatingHours,
+        documents: [businessLicense, foodSafetyCertificate, ...additionalDocuments],
+        location: location,
+        locationCoordinates: selectedLocation || undefined
+      };
+
       try {
-        // Find the selected restaurant type ID
-        const selectedRestaurantType = dbRestaurantTypes.find(rt => rt.type === restaurantType)
-        const restaurantTypeId = selectedRestaurantType?.id || ""
-        
-        // Find the selected cuisine type IDs
-        const selectedCuisineTypeIds = dbCuisineTypes
-          .filter(ct => cuisineTypes.includes(ct.name))
-          .map(ct => ct.id)
-          
-        // Format data for registration
-        const registrationData: RestaurantRegistrationData = {
-          // Common user data
-          email: userData.email,
-          password: userData.password, // Use the password passed from parent
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          phone: userData.phone,
-          profilePictureUrl: userData.profileImage, // Changed from profileImage to profilePictureUrl
-          
-          // Restaurant specific data
-          restaurantName: restaurantName,
-          licenseNumber: licenseNumber,
-          restaurantTypeId: restaurantTypeId,
-          cuisineTypeIds: selectedCuisineTypeIds,
-          operatingHours: operatingHours,
-          documents: [businessLicense, foodSafetyCertificate, ...additionalDocuments], 
-          location: location,
-          locationCoordinates: selectedLocation || undefined
+        if (isGoogleAuth && onSubmitSuccess) {
+          onSubmitSuccess({
+            restaurantName,
+            licenseNumber,
+            restaurantType,
+            cuisineTypes,
+            operatingHours,
+            documents: [businessLicense, foodSafetyCertificate, ...additionalDocuments],
+            location,
+            locationCoordinates: selectedLocation || undefined
+          });
+          return;
         }
 
-        // Call the registration service
-        await userService.register(registrationData, "restaurant")
-        
-        // Show success modal
-        setShowSuccessModal(true)
-        
+        await userService.register(registrationData, "restaurant");
+        setShowSuccessModal(true);
       } catch (error: any) {
-        console.error("Registration failed:", error)
-        setRegistrationError(error.response?.data?.message || "Registration failed. Please try again.")
+        console.error("Registration failed:", error);
+        setRegistrationError(error.response?.data?.message || "Registration failed. Please try again.");
       } finally {
-        setIsRegistering(false)
+        setIsRegistering(false);
       }
     }
-  }
+  };
 
-  // Action functions
   const handleRestaurantTypeSelect = (type: string) => {
     setRestaurantType(type)
     setShowRestaurantTypeModal(false)
@@ -284,7 +285,6 @@ export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
       }
     } 
     else if (step === 2) {
-      // Operating hours validation if needed
       isValid = true
     }
     else if (step === 3) {
@@ -324,7 +324,6 @@ export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
   }
   
   const resetStore = () => {
-    // Reset all state values to default
     setRestaurantName("")
     setLicenseNumber("")
     setRestaurantType("")
@@ -377,7 +376,6 @@ export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
     },
   }
 
-  // Fallback options in case API fails
   const fallbackRestaurantTypes = ["Fast Food", "Casual Dining", "Fine Dining", "Cafe", "Bakery", "Food Truck"]
   const fallbackCuisineTypes = [
     "Italian", "Chinese", "Indian", "Mexican", "Japanese", "Thai", 
@@ -572,7 +570,7 @@ export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
         )}
 
         {step === 3 && (
-          <motion.form onSubmit={handleStep3Submit} className="space-y-6">
+          <motion.form onSubmit={handleSubmit} className="space-y-6">
             <motion.div className="space-y-4" variants={itemVariants}>
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Upload Documents</Label>
@@ -676,7 +674,14 @@ export function RestaurantSignUp({ userData }: RestaurantSignUpProps) {
                 className="w-full"
                 disabled={isRegistering}
               >
-                {isRegistering ? "Creating Account..." : "Complete Sign Up"}
+                {isRegistering ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isGoogleAuth ? "Completing Setup..." : "Register Restaurant"}
+                  </>
+                ) : (
+                  isGoogleAuth ? "Complete Setup" : "Register Restaurant"
+                )}
               </Button>
             </motion.div>
           </motion.form>

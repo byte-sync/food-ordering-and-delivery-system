@@ -27,6 +27,7 @@ const PUBLIC_ROUTES = [
   '/favicon.ico',
   '/placeholder.svg',
   '/unauthorized', // Added unauthorized page to public routes
+  '/complete-profile', // Add complete-profile routes as public
 ];
 
 export function middleware(request: NextRequest) {

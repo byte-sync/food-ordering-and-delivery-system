@@ -15,10 +15,12 @@ import api from "@/lib/axios"
 
 interface AccountStepProps {
   onSubmit: (email: string, password: string, confirmPassword: string) => void
+  googleUser?: boolean
+  initialEmail?: string
 }
 
-export function AccountStep({ onSubmit }: AccountStepProps) {
-  const [email, setEmail] = useState("")
+export function AccountStep({ onSubmit, googleUser = false, initialEmail = "" }: AccountStepProps) {
+  const [email, setEmail] = useState(initialEmail || "")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({})
@@ -83,14 +85,17 @@ export function AccountStep({ onSubmit }: AccountStepProps) {
       newErrors.email = "Email is invalid"
     }
 
-    if (!password) {
-      newErrors.password = "Password is required"
-    } else if (password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters"
-    }
+    // Only validate passwords if not a Google user
+    if (!googleUser) {
+      if (!password) {
+        newErrors.password = "Password is required"
+      } else if (password.length < 8) {
+        newErrors.password = "Password must be at least 8 characters"
+      }
 
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match"
+      if (password !== confirmPassword) {
+        newErrors.confirmPassword = "Passwords do not match"
+      }
     }
 
     // Preserve email error if it's about existing email
@@ -163,6 +168,7 @@ export function AccountStep({ onSubmit }: AccountStepProps) {
           onChange={setEmail}
           error={errors.email === "This email is already in use" ? undefined : errors.email}
           icon={checkingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+          disabled={googleUser && initialEmail ? true : false} // Disable if Google user with email
         />
         {errors.email === "This email is already in use" && (
           <div className="mt-2 flex items-center text-sm text-destructive">
@@ -172,19 +178,23 @@ export function AccountStep({ onSubmit }: AccountStepProps) {
         )}
       </motion.div>
 
-      <motion.div variants={itemVariants}>
-        <PasswordInput id="password" label="Password" value={password} onChange={setPassword} error={errors.password} />
-      </motion.div>
+      {!googleUser && (
+        <>
+          <motion.div variants={itemVariants}>
+            <PasswordInput id="password" label="Password" value={password} onChange={setPassword} error={errors.password} />
+          </motion.div>
 
-      <motion.div variants={itemVariants}>
-        <PasswordInput
-          id="confirmPassword"
-          label="Confirm Password"
-          value={confirmPassword}
-          onChange={setConfirmPassword}
-          error={errors.confirmPassword}
-        />
-      </motion.div>
+          <motion.div variants={itemVariants}>
+            <PasswordInput
+              id="confirmPassword"
+              label="Confirm Password"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              error={errors.confirmPassword}
+            />
+          </motion.div>
+        </>
+      )}
 
       <motion.div variants={itemVariants}>
         <Button type="submit" className="w-full" disabled={checkingEmail || errors.email === "This email is already in use"}>
@@ -193,9 +203,14 @@ export function AccountStep({ onSubmit }: AccountStepProps) {
         </Button>
       </motion.div>
 
-      <motion.div variants={itemVariants}>
-        <SocialSignIn onGoogleSignIn={() => console.log("Google sign in")} />
-      </motion.div>
+      {!googleUser && !initialEmail && (
+        <motion.div variants={itemVariants} className="text-center text-sm">
+          <span>Already have an account? </span>
+          <a href="/sign-in" className="text-primary font-medium hover:underline">
+            Sign in
+          </a>
+        </motion.div>
+      )}
     </motion.form>
   )
 }

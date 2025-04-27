@@ -79,6 +79,7 @@ export const loginUser = async (
 ) => {
   const user = await UserModel.findOne({ email });
   if (!user) throw new Error('User not found');
+  if (!user.password) throw new Error('User account is incomplete or corrupted'); 
 
   const valid = await comparePassword(password, user.password);
   if (!valid) throw new Error('Invalid credentials');
@@ -154,7 +155,7 @@ export const verifyOtp = async (email: string, otp: string) => {
   return { success: true };
 };
 
-export const resetPassword = async (email: string, newPassword: string, ip: string) => {
+export const resetPassword = async (email: string, newPassword: string, ipAddress: string) => {
   const user = await UserModel.findOne({ email });
   if (!user) throw new Error('User not found');
 

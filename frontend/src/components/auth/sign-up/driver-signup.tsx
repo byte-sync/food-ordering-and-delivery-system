@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { FileText, Car, MapPin, Check, Upload, Search } from "lucide-react"
+import { FileText, Car, MapPin, Check, Upload, Search, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,17 +15,23 @@ import { DocumentUploader } from "@/components/shared/document-uploader"
 import { userService, VehicleType } from "@/services/user-service"
 
 interface DriverSignUpProps {
-  userData: {
-    email: string
-    firstName: string
-    lastName: string
-    phone: string
-    profileImage: string | null
-    password: string
-  }
+  userData?: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    profileImage?: string | null;
+  };
+  isGoogleAuth?: boolean;
+  onSubmitSuccess?: (additionalData: any) => void;
 }
 
-export function DriverSignUp({ userData }: DriverSignUpProps) {
+export function DriverSignUp({ 
+  userData = { email: "", password: "", firstName: "", lastName: "", phone: "" },
+  isGoogleAuth = false,
+  onSubmitSuccess
+}: DriverSignUpProps) {
   // Vehicle info state
   const [vehicleType, setVehicleType] = useState("")
   const [vehicleTypeText, setVehicleTypeText] = useState("") // To display selected vehicle type name
@@ -69,20 +75,35 @@ export function DriverSignUp({ userData }: DriverSignUpProps) {
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (validateForm()) {
+      setIsLoading(true);
+
       try {
-        // Format data for registration
-        const registrationData = {
-          // Common user data
+        if (isGoogleAuth && onSubmitSuccess) {
+          // For Google auth, use the callback instead of API call
+          onSubmitSuccess({
+            vehicleType,
+            licensePlate,
+            documents: [
+              driversLicense,
+              vehicleRegistration,
+              vehicleInsurance,
+              ...additionalDocuments
+            ],
+            location,
+          });
+          return;
+        }
+        
+        // Regular registration flow
+        const formData = {
           email: userData.email,
-          password: userData.password,
+          password: userData.password, 
           firstName: userData.firstName,
           lastName: userData.lastName,
           phone: userData.phone,
-          profilePictureUrl: userData.profileImage, // Changed from profileImage to profilePictureUrl
-          
-          // Driver specific data
+          profilePictureUrl: userData.profileImage,
           vehicleTypeId: vehicleType,
           licensePlate: licensePlate,
           documents: [
@@ -92,23 +113,23 @@ export function DriverSignUp({ userData }: DriverSignUpProps) {
             ...additionalDocuments
           ],
           location: location,
-          // Add coordinates if available from your map component
-        }
-
-        // Call the registration service
-        await userService.register(registrationData, "driver")
+        };
+        
+        await userService.register(formData, "driver");
         
         // Show success modal
-        setShowSuccessModal(true)
+        setShowSuccessModal(true);
       } catch (error: any) {
-        console.error("Registration failed:", error)
+        console.error("Registration failed:", error);
         setErrors({
           ...errors,
           general: error.response?.data?.message || "Registration failed. Please try again."
-        })
+        });
+      } finally {
+        setIsLoading(false);
       }
     }
-  }
+  };
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {}
@@ -202,6 +223,26 @@ export function DriverSignUp({ userData }: DriverSignUpProps) {
         initial="hidden"
         animate="visible"
       >
+        {!isGoogleAuth && (
+          <motion.div className="space-y-4" variants={itemVariants}>
+            <Label htmlFor="email" className="text-sm font-medium">
+              Email
+            </Label>
+            <Input
+              id="email"
+              placeholder="Enter your email"
+              className={`pl-10 ${errors.email ? "border-red-500" : ""}`}
+              value={userData.email}
+              readOnly
+            />
+            {errors.email && (
+              <motion.p className="text-sm text-red-500" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                {errors.email}
+              </motion.p>
+            )}
+          </motion.div>
+        )}
+
         <motion.div className="space-y-4" variants={itemVariants}>
           <Label htmlFor="vehicleType" className="text-sm font-medium">
             Vehicle Type
@@ -338,8 +379,19 @@ export function DriverSignUp({ userData }: DriverSignUpProps) {
         </motion.div>
 
         <motion.div variants={itemVariants}>
-          <Button type="submit" className="w-full">
-            Complete Sign Up
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {isGoogleAuth ? "Completing Setup..." : "Apply as Driver"}
+              </>
+            ) : (
+              isGoogleAuth ? "Complete Setup" : "Apply as Driver"
+            )}
           </Button>
         </motion.div>
       </motion.form>

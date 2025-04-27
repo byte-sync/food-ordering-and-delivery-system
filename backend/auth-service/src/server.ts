@@ -11,10 +11,12 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-// app.use(cors({ 
-//   origin: process.env.CORS_ORIGIN || '*',
-//   credentials: true
-// }));
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Routes
 app.use('/api/auth', authRoutes);

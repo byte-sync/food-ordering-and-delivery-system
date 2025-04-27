@@ -10,14 +10,28 @@ import { Label } from "@/components/ui/label"
 
 interface PersonalDetailsStepProps {
   onSubmit: (firstName: string, lastName: string, phone: string, profileImage: string | null) => void
+  initialData?: {
+    firstName?: string
+    lastName?: string
+    phone?: string
+    profileImage?: string | null
+  }
 }
 
-export function PersonalDetailsStep({ onSubmit }: PersonalDetailsStepProps) {
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
-  const [phone, setPhone] = useState("")
-  const [profileImage, setProfileImage] = useState<string | null>(null)
+export function PersonalDetailsStep({ onSubmit, initialData = {} }: PersonalDetailsStepProps) {
+  const [firstName, setFirstName] = useState(initialData.firstName || "")
+  const [lastName, setLastName] = useState(initialData.lastName || "")
+  const [phone, setPhone] = useState(initialData.phone || "")
+  const [profileImage, setProfileImage] = useState<string | null>(initialData.profileImage || null)
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
+
+  // Update state if initialData changes
+  useEffect(() => {
+    if (initialData.firstName) setFirstName(initialData.firstName)
+    if (initialData.lastName) setLastName(initialData.lastName)
+    if (initialData.phone) setPhone(initialData.phone)
+    if (initialData.profileImage) setProfileImage(initialData.profileImage)
+  }, [initialData])
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {}

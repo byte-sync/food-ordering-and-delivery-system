@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import 'leaflet/dist/leaflet.css';
 import { Toaster } from "sonner";
+import { GoogleAuthProvider } from "@/components/auth/google-auth-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,8 +31,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        {children}
-        <Toaster richColors />
+        <GoogleAuthProvider>
+          {children}
+          <Toaster richColors />
+        </GoogleAuthProvider>
       </body>
     </html>
   );
