@@ -2,7 +2,7 @@ import MenuItems from "@/components/restaurant/menu-items";
 
 // Fetch menu items on the server side
 async function fetchMenuItems() {
-  const response = await fetch("http://localhost:8083/menu/all", {
+  const response = await fetch("http://localhost/api/menu-service/all", {
     method: "GET",
     headers: {
       "Content-Type": "application/json",

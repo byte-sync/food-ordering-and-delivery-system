@@ -80,8 +80,7 @@ const UpdateMenuItem = () => {
   useEffect(() => {
     const fetchMenuItem = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8083";
-        const response = await axios.get<MenuItem>(`${API_URL}/menu/${id}`);
+        const response = await axios.get<MenuItem>(`http://localhost/api/menu-service/${id}`);
         const fetchedMenuItem = response.data;
 
         if (!fetchedMenuItem) {
@@ -146,7 +145,7 @@ const UpdateMenuItem = () => {
     });
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8083";
+      const API_URL = "http://localhost/api/menu-service";
       const response = await fetch(`${API_URL}/menu/update/${id}`, {
         method: "PUT",
         body: formDataToSend,

@@ -72,7 +72,7 @@ const AddMenuForm = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get<Category[]>("http://localhost:8083/categories");
+        const response = await axios.get<Category[]>("http://localhost/api/menu-service/categories");
         if (response.status === 200) {
           setCategories(response.data); // Set the fetched categories
         }
@@ -116,8 +116,8 @@ const AddMenuForm = () => {
     });
 
     try {
-      const API_URL = "http://localhost:8083";
-      const response = await fetch(`${API_URL}/menu/add`, {
+      const API_URL = "http://localhost/api/menu-service";
+      const response = await fetch(`${API_URL}/add`, {
         method: "POST",
         body: formDataToSend,
       });

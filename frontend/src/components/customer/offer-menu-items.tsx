@@ -1,6 +1,5 @@
 "use client"; // Mark this file as a client component
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
 // Define the type for a menu item
@@ -21,42 +20,22 @@ interface MenuItem {
   }[];
 }
 
-const MenuItemsWithOffers = () => {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0); 
+interface MenuItemsWithOffersProps {
+  menuItems: MenuItem[]; // Props for receiving menu items
+}
+
+const MenuItemsWithOffers = ({ menuItems }: MenuItemsWithOffersProps) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [fadeIn, setFadeIn] = useState(true);
-
-  // Fetch all menu items with offers from the backend
-  useEffect(() => {
-    const fetchMenuItemsWithOffers = async () => {
-      try {
-        const response = await axios.get<MenuItem[]>("http://localhost:8083/menu/all");
-        if (response.status === 200) {
-          // Filter menu items to include only those with a non-zero offer
-          const filteredItems = response.data.filter((item) => item.offer > 0);
-          setMenuItems(filteredItems);
-        }
-      } catch (err) {
-        console.error("Error fetching menu items with offers:", err);
-        setError("Failed to load menu items with offers.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMenuItemsWithOffers();
-  }, []);
 
   // Auto-play functionality with fade animation
   useEffect(() => {
     if (menuItems.length === 0) return;
-    
+
     const intervalId = setInterval(() => {
       // Start fade out
       setFadeIn(false);
-      
+
       // Change index after fade out
       setTimeout(() => {
         setCurrentIndex((prevIndex) => (prevIndex + 1) % menuItems.length);
@@ -68,18 +47,12 @@ const MenuItemsWithOffers = () => {
     return () => clearInterval(intervalId);
   }, [menuItems]);
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-700"></div>
-    </div>;
-  }
-
-  if (error) {
-    return <div className="text-center text-red-500 p-4 bg-red-50 rounded-md">{error}</div>;
-  }
-
   if (menuItems.length === 0) {
-    return <div className="text-center text-gray-500 p-8 bg-gray-50 rounded-lg">No menu items with offers available at this time.</div>;
+    return (
+      <div className="text-center text-gray-500 p-8 bg-gray-50 rounded-lg">
+        No menu items with offers available at this time.
+      </div>
+    );
   }
 
   // Handle manual navigation with animation
@@ -94,7 +67,9 @@ const MenuItemsWithOffers = () => {
   const handlePrev = () => {
     setFadeIn(false);
     setTimeout(() => {
-      setCurrentIndex((prevIndex) => (prevIndex === 0 ? menuItems.length - 1 : prevIndex - 1));
+      setCurrentIndex((prevIndex) =>
+        prevIndex === 0 ? menuItems.length - 1 : prevIndex - 1
+      );
       setFadeIn(true);
     }, 300);
   };
@@ -108,7 +83,7 @@ const MenuItemsWithOffers = () => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 ">
+    <div className="w-full max-w-7xl mx-auto p-6">
       {/* Title with decorative elements */}
       <div className="mb-8 text-center relative">
         <div className="absolute left-0 right-0 top-1/2 h-px bg-amber-200"></div>
@@ -119,9 +94,11 @@ const MenuItemsWithOffers = () => {
 
       {/* Progress bar */}
       <div className="w-full bg-gray-200 h-1 rounded-full mb-6 overflow-hidden">
-        <div 
+        <div
           className="bg-amber-500 h-1 transition-all duration-300 ease-out"
-          style={{ width: `${((currentIndex + 1) / menuItems.length) * 100}%` }}
+          style={{
+            width: `${((currentIndex + 1) / menuItems.length) * 100}%`,
+          }}
         ></div>
       </div>
 
@@ -147,7 +124,9 @@ const MenuItemsWithOffers = () => {
         <div className="flex justify-center w-full">
           <div
             key={currentItem.id}
-            className={`w-full transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100' : 'opacity-0'}`}
+            className={`w-full transition-all duration-300 ease-in-out ${
+              fadeIn ? "opacity-100" : "opacity-0"
+            }`}
           >
             <div className="md:flex">
               {/* Image Section */}
@@ -186,26 +165,44 @@ const MenuItemsWithOffers = () => {
 
                 {/* Portions and pricing */}
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-700">Available Portions:</h3>
+                  <h3 className="font-semibold text-gray-700">
+                    Available Portions:
+                  </h3>
                   <div className="space-y-2">
-                    {currentItem.portions && currentItem.portions.map((portion) => (
-                      <div key={portion.id} className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
-                        <span className="font-medium">{portion.portionSize}</span>
-                        <div className="text-right">
-                          <span className="text-gray-400 line-through mr-2">${portion.price.toFixed(2)}</span>
-                          <span className="text-amber-700 font-bold">${getDiscountedPrice(portion.price)}</span>
+                    {currentItem.portions &&
+                      currentItem.portions.map((portion) => (
+                        <div
+                          key={portion.id}
+                          className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm"
+                        >
+                          <span className="font-medium">
+                            {portion.portionSize}
+                          </span>
+                          <div className="text-right">
+                            <span className="text-gray-400 line-through mr-2">
+                              ${portion.price.toFixed(2)}
+                            </span>
+                            <span className="text-amber-700 font-bold">
+                              ${getDiscountedPrice(portion.price)}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
 
                 {/* Availability Status */}
                 <div className="pt-2">
-                  <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                    currentItem.availabilityStatus ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {currentItem.availabilityStatus ? 'Available Now' : 'Currently Unavailable'}
+                  <span
+                    className={`px-3 py-1 text-xs font-medium rounded-full ${
+                      currentItem.availabilityStatus
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {currentItem.availabilityStatus
+                      ? "Available Now"
+                      : "Currently Unavailable"}
                   </span>
                 </div>
               </div>
@@ -227,7 +224,9 @@ const MenuItemsWithOffers = () => {
               }, 300);
             }}
             className={`h-2 rounded-full transition-all duration-300 ${
-              currentIndex === index ? 'w-6 bg-amber-700' : 'w-2 bg-gray-300 hover:bg-amber-300'
+              currentIndex === index
+                ? "w-6 bg-amber-700"
+                : "w-2 bg-gray-300 hover:bg-amber-300"
             }`}
             aria-label={`Go to item ${index + 1}`}
           />
