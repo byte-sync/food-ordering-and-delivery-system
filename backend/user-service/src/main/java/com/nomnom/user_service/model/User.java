@@ -47,7 +47,6 @@ public abstract class User {
     @JsonProperty("userStatus")
     private UserStatus userStatus = UserStatus.OFFLINE;
     
-    private String profilePicture;
-
     private String profilePictureUrl;
+
 }

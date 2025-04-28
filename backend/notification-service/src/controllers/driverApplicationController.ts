@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { sendSMS, sendEmail } from '../services/notificationService';
+import { sendSMS, sendEmail, sendSMS2 } from '../services/notificationService';
 import { Notification } from '../models/notificationModel'; // Import the Notification model
 import { AdminEmail } from '../models/adminEmailModel'; // Import the AdminEmail model
 import dotenv from 'dotenv';
@@ -136,7 +136,7 @@ export const updateApplicationStatus = async (req: Request, res: Response): Prom
         `;
 
     // Send SMS notification
-    // await sendSMS(application.phoneNumber, smsMessage);
+    await sendSMS2(application.phoneNumber, smsMessage);
 
     // Send email notification
     await sendEmail(application.email, emailSubject, emailText, emailHtml);

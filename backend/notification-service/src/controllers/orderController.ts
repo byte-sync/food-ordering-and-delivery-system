@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { websocketUtils } from '../utils/websocketUtils';
-import { sendSMS, sendEmail, sendOrderStatusNotification } from '../services/notificationService';
+import { sendSMS, sendEmail, sendOrderStatusNotification, sendSMS2 } from '../services/notificationService';
 import { Notification } from '../models/notificationModel'; // Import NotificationModel
 
 // Add a new order
@@ -43,7 +43,7 @@ export const addOrder = async (req: Request, res: Response): Promise<void> => {
     `;
 
     // Send SMS notification
-    // await sendSMS(phoneNumber, smsMessage);
+    await sendSMS2(phoneNumber, smsMessage);
 
     // Send email notification
     await sendEmail(email, emailSubject, emailText, emailHtml);
@@ -119,7 +119,7 @@ We are processing your order and will keep you updated on its status.`;
     `;
 
     // Send SMS notification
-    // await sendSMS(phoneNumber, smsMessage);
+    await sendSMS2(phoneNumber, smsMessage);
 
     // Send email notification
     await sendEmail(email, emailSubject, emailText, emailHtml);

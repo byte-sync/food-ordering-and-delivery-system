@@ -37,26 +37,19 @@ export function middleware(request: NextRequest) {
   const userType = request.cookies.get('userType')?.value?.toLowerCase() as UserType;
   const userId = request.cookies.get('userId')?.value;
   
-  // If user has a valid session, redirect to their dashboard when accessing public routes
-  // like sign-in, sign-up, or root path
-  if (token && userType && userId) {
-    if (pathname === '/' || pathname === '/sign-in' || pathname === '/sign-up') {
-      const dashboardUrl = `/${userType}`;
-      console.log(`Valid session detected: Redirecting user to ${dashboardUrl}`);
-      return NextResponse.redirect(new URL(dashboardUrl, request.url));
-    }
-  }
-  
- 
-  // Get auth token and user type from cookies
-  const token = request.cookies.get('authToken')?.value;
-  const userType = request.cookies.get('userType')?.value?.toLowerCase() as UserType;
-  const userId = request.cookies.get('userId')?.value;
-  
-  
-  // If the user is at the root, redirect them to their appropriate dashboard
-  if (pathname === '/') {
+// If user has a valid session, redirect to their dashboard when accessing public routes
+// like sign-in, sign-up, or root path
+if (token && userType && userId) {
+  if (pathname === '/' || pathname === '/sign-in' || pathname === '/sign-up') {
     const dashboardUrl = `/${userType}`;
+    console.log(`Valid session detected: Redirecting user to ${dashboardUrl}`);
     return NextResponse.redirect(new URL(dashboardUrl, request.url));
   }
-  
+}
+
+// If the user is at the root, redirect them to their appropriate dashboard
+if (pathname === '/') {
+  const dashboardUrl = `/${userType}`;
+  return NextResponse.redirect(new URL(dashboardUrl, request.url));
+}
+}

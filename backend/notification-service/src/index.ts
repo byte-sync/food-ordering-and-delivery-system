@@ -11,7 +11,7 @@ import { allocateDelivery } from './controllers/driverController';
 import { applyToBecomeDriver, updateApplicationStatus } from './controllers/driverApplicationController';
 import { processPayment,notifyDriverAboutPaymentDeposit,notifyRestaurantAboutPaymentDeposit } from './controllers/paymentController';
 import { applyToBecomeRestaurant, updateRestaurantApplicationStatus } from './controllers/restaurantController';
-import { addAdminEmail,getAllAdminEmails } from '../src/controllers/adminController';
+import { addAdminEmail, getAllAdminEmails } from './controllers/adminController';
 // Load environment variables
 dotenv.config();
 

@@ -1,5 +1,7 @@
 package com.nomnom.user_service.service;
 
+import com.nomnom.user_service.enums.DriverStatus;
+import com.nomnom.user_service.enums.RestaurantStatus;
 import com.nomnom.user_service.enums.UserType;
 import com.nomnom.user_service.model.*;
 import com.nomnom.user_service.repository.CuisineTypeRepository;
@@ -94,8 +96,12 @@ public class UserService {
     public User updateDriverStatus(String id, String status) {
         Optional<User> optional = userRepository.findById(id);
         if (optional.isPresent() && optional.get() instanceof Driver driver) {
-            driver.setStatus(status);
-            return userRepository.save(driver);
+            try {
+                driver.setDriverStatus(DriverStatus.valueOf(status));
+                return userRepository.save(driver);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid driver status: " + status);
+            }
         }
         throw new IllegalArgumentException("Driver not found or invalid ID");
     }
@@ -103,8 +109,12 @@ public class UserService {
     public User updateRestaurantStatus(String id, String status) {
         Optional<User> optional = userRepository.findById(id);
         if (optional.isPresent() && optional.get() instanceof Restaurant restaurant) {
-            restaurant.setStatus(status);
-            return userRepository.save(restaurant);
+            try {
+                restaurant.setRestaurantStatus(RestaurantStatus.valueOf(status));
+                return userRepository.save(restaurant);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid restaurant status: " + status);
+            }
         }
         throw new IllegalArgumentException("Restaurant not found or invalid ID");
     }
@@ -155,7 +165,7 @@ public class UserService {
         Optional<User> optional = userRepository.findById(id);
         if (optional.isPresent()) {
             User user = optional.get();
-            user.setProfilePicture(profilePictureUrl);
+            user.setProfilePictureUrl(profilePictureUrl);
             return userRepository.save(user);
         }
         throw new IllegalArgumentException("User not found or invalid ID");
@@ -168,5 +178,4 @@ public class UserService {
                 .map(user -> (Restaurant) user)
                 .toList();
     }
-
 }

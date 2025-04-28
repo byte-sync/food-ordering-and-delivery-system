@@ -32,6 +32,9 @@ export default async function MenuPage({
 }) {
   const { id } = params; // Extract the restaurant ID from the dynamic route
 
+  // Example: Retrieve customerId (you can replace this with actual logic)
+  const customerId = "customer123"; // Replace with real logic to get customerId
+
   // Fetch menu items for the given restaurant ID
   const menuItems = await fetchMenuItems(id);
 
@@ -42,8 +45,12 @@ export default async function MenuPage({
 
   return (
     <div>
-      {/* Pass the fetched menu items to the MenuItems component */}
-      <MenuItems menuItems={menuItems} />
+      {/* Pass the fetched menu items, customerId, and restaurantId to the MenuItems component */}
+      <MenuItems
+        menuItems={menuItems}
+        customerId={customerId} // Pass customerId here
+        restaurantId={Number(id)} // Convert id to a number and pass as restaurantId
+      />
     </div>
   );
 }

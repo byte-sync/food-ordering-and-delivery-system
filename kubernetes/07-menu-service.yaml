@@ -1,0 +1,119 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: menu-db-secrets
+  namespace: nomnom-system
+type: Opaque
+stringData:
+  MYSQL_DATABASE: "menudb"
+  MYSQL_USER: "menuuser"
+  MYSQL_PASSWORD: "menupassword"
+  MYSQL_ROOT_PASSWORD: "rootpassword"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: menu-service-secrets
+  namespace: nomnom-system
+type: Opaque
+stringData:
+  # Menu service environment variables (for Spring Boot)
+  SPRING_DATASOURCE_URL: "jdbc:mysql://menu-db:3306/menudb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true"
+  SPRING_DATASOURCE_USERNAME: "menuuser"
+  SPRING_DATASOURCE_PASSWORD: "menupassword"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+  SERVER_PORT: "8083"
+  # Add other required environment variables for menu service
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: menu-db-pvc
+  namespace: nomnom-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: menu-db
+  namespace: nomnom-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: menu-db
+  template:
+    metadata:
+      labels:
+        app: menu-db
+    spec:
+      containers:
+      - name: menu-db
+        image: mysql:8.0
+        ports:
+        - containerPort: 3306
+        envFrom:
+        - secretRef:
+            name: menu-db-secrets
+        volumeMounts:
+        - name: menu-db-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: menu-db-storage
+        persistentVolumeClaim:
+          claimName: menu-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: menu-db
+  namespace: nomnom-system
+spec:
+  selector:
+    app: menu-db
+  ports:
+  - port: 3306
+    targetPort: 3306
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: menu-service
+  namespace: nomnom-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: menu-service
+  template:
+    metadata:
+      labels:
+        app: menu-service
+    spec:
+      containers:
+      - name: menu-service
+        image: dasunwickr/menu-service:latest
+        ports:
+        - containerPort: 8083
+        envFrom:
+        - secretRef:
+            name: menu-service-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: menu-service
+  namespace: nomnom-system
+spec:
+  selector:
+    app: menu-service
+  ports:
+  - port: 8083
+    targetPort: 8083
+  type: ClusterIP

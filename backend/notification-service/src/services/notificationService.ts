@@ -3,6 +3,7 @@ import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import axios from 'axios';
 
 // Load environment variables
 dotenv.config();
@@ -306,6 +307,41 @@ export const sendRestaurantPaymentDepositedNotification = async (
     console.log(`Restaurant payment deposited notification sent to ${restaurantName}`);
   } catch (error) {
     console.error('Error sending restaurant payment notification:', error);
+    throw error;
+  }
+};
+
+
+
+const API_URL = 'https://app.notify.lk/api/v1/send';
+
+export const sendSMS2 = async (to: string, message: string): Promise<void> => {
+  const apiKey = process.env.NOTIFY_API_KEY;
+  const senderId = process.env.NOTIFY_SENDER_ID;
+  const userId = process.env.NOTIFY_USER_ID;
+
+  if (!apiKey || !senderId) {
+    throw new Error('API Key or Sender ID is missing');
+  }
+
+  try {
+    const response = await axios.post(API_URL, null, {
+      params: {
+        user_id: userId,
+        api_key: apiKey,
+        sender_id: senderId,
+        to,
+        message,
+      },
+    });
+
+    if (response.data.status === 'success') {
+      console.log('SMS sent successfully:', response.data);
+    } else {
+      console.error('Failed to send SMS:', response.data);
+    }
+  } catch (error) {
+    console.error('Error sending SMS:', error);
     throw error;
   }
 };
