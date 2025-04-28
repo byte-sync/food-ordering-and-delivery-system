@@ -1,0 +1,27 @@
+{
+    "confirmed": {
+      "subject": "✅ Your Order Has Been Confirmed!",
+      "text": "Dear Customer, your order has been successfully confirmed. We will keep you updated on its progress.",
+      "html": "<h1 style='color: #28a745;'>✅ Your Order Has Been Confirmed!</h1><p>Dear Customer, your order has been successfully confirmed. We will keep you updated on its progress.</p>"
+    },
+    "preperation completed": {
+      "subject": "📦 Your Order Is Ready for Delivery!",
+      "text": "Dear Customer, your order has been prepared and will soon be out for delivery. Stay tuned for updates.",
+      "html": "<h1 style='color: #17a2b8;'>📦 Your Order Is Ready for Delivery!</h1><p>Dear Customer, your order has been prepared and will soon be out for delivery. Stay tuned for updates.</p>"
+    },
+    "out-for-delivery": {
+      "subject": "🚚 Your Order Is Out for Delivery!",
+      "text": "Dear Customer, your order is now out for delivery. You will receive it shortly.",
+      "html": "<h1 style='color: #ffc107;'>🚚 Your Order Is Out for Delivery!</h1><p>Dear Customer, your order is now out for delivery. You will receive it shortly.</p>"
+    },
+    "delivered": {
+      "subject": "🎉 Your Order Has Been Delivered!",
+      "text": "Dear Customer, your order has been successfully delivered. Thank you for choosing us!",
+      "html": "<h1 style='color: #28a745;'>🎉 Your Order Has Been Delivered!</h1><p>Dear Customer, your order has been successfully delivered. Thank you for choosing us!</p>"
+    },
+    "cancelled": {
+      "subject": "⚠️ Your Order Has Been Cancelled",
+      "text": "Dear Customer, your order has been cancelled. If you have any questions, please contact our support team.",
+      "html": "<h1 style='color: #dc3545;'>⚠️ Your Order Has Been Cancelled</h1><p>Dear Customer, your order has been cancelled. If you have any questions, please contact our support team.</p>"
+    }
+  }

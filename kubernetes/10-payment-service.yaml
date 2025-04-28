@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: payment-service-secrets
+  namespace: nomnom-system
+type: Opaque
+stringData:
+  # Payment service environment variables
+  PORT: "4242"
+  NODE_ENV: "production"
+  STRIPE_SECRET_KEY: "sk_test_your_stripe_secret_key"
+  STRIPE_PUBLISHABLE_KEY: "pk_test_your_stripe_publishable_key"
+  WEBHOOK_SECRET: "your_stripe_webhook_secret"
+  MONGODB_URI: "mongodb+srv://username:password@your-atlas-cluster.mongodb.net/payment-service?retryWrites=true&w=majority"
+  # Add other required environment variables for payment service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  namespace: nomnom-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+      - name: payment-service
+        image: dasunwickr/payment-service:latest
+        ports:
+        - containerPort: 4242
+        envFrom:
+        - secretRef:
+            name: payment-service-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  namespace: nomnom-system
+spec:
+  selector:
+    app: payment-service
+  ports:
+  - port: 4242
+    targetPort: 4242
+  type: ClusterIP

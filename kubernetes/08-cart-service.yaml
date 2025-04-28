@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cart-service-secrets
+  namespace: nomnom-system
+type: Opaque
+stringData:
+  # Cart service environment variables (for Spring Boot with MongoDB Atlas)
+  SPRING_DATA_MONGODB_URI: "mongodb+srv://username:password@your-atlas-cluster.mongodb.net/cart-service?retryWrites=true&w=majority"
+  SPRING_DATA_MONGODB_DATABASE: "cart-service"
+  SERVER_PORT: "8080"
+  # Add other required environment variables for cart service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart-service
+  namespace: nomnom-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cart-service
+  template:
+    metadata:
+      labels:
+        app: cart-service
+    spec:
+      containers:
+      - name: cart-service
+        image: dasunwickr/cart-service:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - secretRef:
+            name: cart-service-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart-service
+  namespace: nomnom-system
+spec:
+  selector:
+    app: cart-service
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP

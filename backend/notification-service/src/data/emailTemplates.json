@@ -1,0 +1,12 @@
+{
+  "urgentDelivery": {
+    "subject": "📦 Urgent Delivery Required",
+    "text": "Dear Driver, there is an urgent delivery that needs your attention. Please act quickly.",
+    "html": "<h1 style='color: #ff5722;'>📦 Urgent Delivery Required</h1><p>Dear Driver, there is an urgent delivery that needs your attention. Please act quickly.</p>"
+  },
+  "thankYouMessage": {
+    "subject": "🎉 Thank You for Your Hard Work",
+    "text": "Dear Driver, thank you for your dedication and hard work. Keep it up!",
+    "html": "<h1 style='color: #0d6efd;'>🎉 Thank You for Your Hard Work</h1><p>Dear Driver, thank you for your dedication and hard work. Keep it up!</p>"
+  }
+}

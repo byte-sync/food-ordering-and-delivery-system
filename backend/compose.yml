@@ -1,0 +1,159 @@
+services:
+  # API Gateway
+  api-gateway:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - type: bind
+        source: ./api-gateway/nginx.conf
+        target: /etc/nginx/nginx.conf
+      - type: bind
+        source: ./api-gateway/default.conf
+        target: /etc/nginx/conf.d/default.conf
+    depends_on:
+      - auth-service
+      - session-service
+      - user-service
+      - payment-service
+      - order-service
+      - menu-service
+      - cart-service
+      # - delivery-service
+      - notification-service
+    restart: unless-stopped
+    networks:
+      - nomnom-network
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    env_file:
+      - ./auth-service/.env
+    restart: unless-stopped
+    networks:
+      - nomnom-network
+
+  # Session Service
+  session-service:
+    build:
+      context: ./session-service
+      dockerfile: Dockerfile
+    ports:
+      - "5007:5007"
+    env_file:
+      - ./session-service/.env
+    restart: unless-stopped
+    networks:
+      - nomnom-network
+
+  # User Service
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+    env_file:
+      - ./user-service/.env
+    restart: unless-stopped
+    networks:
+      - nomnom-network
+
+  # Order Service
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    env_file:
+      - ./order-service/.env
+    restart: unless-stopped
+    networks:
+      - nomnom-network
+
+  # Menu Service
+  menu-service:
+    build:
+      context: ./menu-service
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://menu-db:3306/menudb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=menuuser
+      - SPRING_DATASOURCE_PASSWORD=menupassword
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    depends_on:
+      - menu-db
+    restart: unless-stopped
+    networks:
+      - nomnom-network
+
+  # Menu Database
+  menu-db:
+    image: mysql:8.0
+    ports:
+      - "3310:3306"
+    environment:
+      - MYSQL_DATABASE=menudb
+      - MYSQL_USER=menuuser
+      - MYSQL_PASSWORD=menupassword
+      - MYSQL_ROOT_PASSWORD=rootpassword
+    volumes:
+      - menu-db-data:/var/lib/mysql
+    restart: unless-stopped
+    networks:
+      - nomnom-network
+
+  # Cart Service
+  cart-service:
+    build:
+      context: ./cart-service
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./cart-service/.env
+    restart: unless-stopped
+    networks:
+      - nomnom-network
+  
+  # Notification Service
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    ports:
+      - "5005:5005"
+    env_file:
+      - ./notification-service/.env
+    restart: unless-stopped
+    networks:
+      - nomnom-network
+
+  # Payment Service
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    ports:
+      - "4242:4242"
+    env_file:
+      - ./payment-service/.env
+    restart: unless-stopped
+    networks:
+      - nomnom-network
+
+
+networks:
+  nomnom-network:
+    driver: bridge
+
+volumes:
+  menu-db-data:

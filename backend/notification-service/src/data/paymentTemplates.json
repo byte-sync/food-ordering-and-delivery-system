@@ -1,0 +1,11 @@
+{
+  "confirmed": {
+    "text": "Your payment has been confirmed and processed successfully."
+  },
+  "pending": {
+    "text": "Your payment is currently pending and will be processed shortly."
+  },
+  "failed": {
+    "text": "Your payment has failed. Please try again or contact support."
+  }
+}

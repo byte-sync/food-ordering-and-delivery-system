@@ -1,0 +1,42 @@
+# Docker Compose file to define an application with a MySQL database
+
+version: '3.8'
+
+services:
+  # Your application service
+  server:
+    build:
+      context: .
+    ports:
+      - "8083:8083"
+    depends_on:
+      - mysql  # Ensures the MySQL service starts before the application
+    environment:
+      - DB_HOST=mysql  # Use the service name as the hostname
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=examplepassword
+      - DB_NAME=mydatabase
+
+  # MySQL database service
+  mysql:
+    image: mysql:8.0  # Use the official MySQL 8.0 image
+    restart: always   # Restart the container if it stops unexpectedly
+    environment:
+      MYSQL_ROOT_PASSWORD: examplepassword  # Root password for MySQL
+      MYSQL_DATABASE: mydatabase            # Default database to create
+      MYSQL_USER: appuser                   # Optional: Create a non-root user
+      MYSQL_PASSWORD: apppassword           # Password for the non-root user
+    ports:
+      - "3307:3306"  # Map MySQL port to the host machine (optional)
+    volumes:
+      - mysql-data:/var/lib/mysql  # Persist MySQL data to a volume
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# Define volumes for persistent storage
+volumes:
+  mysql-data:
