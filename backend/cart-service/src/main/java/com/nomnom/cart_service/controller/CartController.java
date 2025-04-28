@@ -16,7 +16,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/cart")
+@RequestMapping("/api/cart")
 public class CartController {
 
     private final ICart cartService;
@@ -51,7 +51,7 @@ public class CartController {
         }
     }
 
-    @PutMapping("/update/{customerId}/{restaurantId}/{itemId}")
+    @PutMapping("/api/cart/update/{customerId}/{restaurantId}/{itemId}")
     public ResponseEntity<Cart> updateCartItemQuantity(
             @PathVariable String customerId,
             @PathVariable String restaurantId,

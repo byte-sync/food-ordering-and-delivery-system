@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { sendSMS, sendEmail, sendSMS2 } from '../services/notificationService';
+import { sendSMS, sendEmail } from '../services/notificationService';
 import { Notification } from '../models/notificationModel'; // Import NotificationModel
 import dotenv from 'dotenv';
 
@@ -119,7 +119,7 @@ Unfortunately, your application to become a restaurant partner for ${restaurantN
         `;
 
     // Send SMS notification
-    await sendSMS2(phoneNumber, smsMessage);
+    // await sendSMS(phoneNumber, smsMessage);
 
     // Send email notification
     await sendEmail(email, emailSubject, emailText, emailHtml);

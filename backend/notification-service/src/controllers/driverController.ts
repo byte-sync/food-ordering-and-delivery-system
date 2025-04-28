@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { sendSMS, sendEmail, sendSMS2 } from '../services/notificationService';
+import { sendSMS, sendEmail } from '../services/notificationService';
 import { Notification } from '../models/notificationModel'; // Import the Notification model
 
 // Allocate a delivery to a driver
@@ -29,7 +29,7 @@ export const allocateDelivery = async (req: Request, res: Response): Promise<voi
     `;
 
     // Send SMS notification
-    await sendSMS2(phoneNumber, smsMessage);
+    // await sendSMS(phoneNumber, smsMessage);
 
     // Send email notification
     await sendEmail(email, emailSubject, emailText, emailHtml);

@@ -42,6 +42,13 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
+    @GetMapping("/restaurants")
+    public ResponseEntity<List<Restaurant>> getAllRestaurants() {
+        List<Restaurant> restaurants = userService.getAllRestaurants();
+        return ResponseEntity.ok(restaurants);
+    }
+
+
     @GetMapping("/type/{userType}")
     public ResponseEntity<List<User>> getUsersByType(@PathVariable UserType userType) {
         return ResponseEntity.ok(userService.getUsersByType(userType.name()));
@@ -99,12 +106,6 @@ public class UserController {
     public ResponseEntity<User> updateProfilePicture(@PathVariable String id, @RequestParam String profilePictureUrl) {
         return ResponseEntity.ok(userService.updateProfilePicture(id, profilePictureUrl));
     }
-
-    @GetMapping("/restaurants")
-    public ResponseEntity<List<Restaurant>> getAllRestaurants() {
-        List<Restaurant> restaurants = userService.getAllRestaurants();
-        return ResponseEntity.ok(restaurants);
-    }  // Added this closing brace
     
     /**
      * Check if a user with the given email exists

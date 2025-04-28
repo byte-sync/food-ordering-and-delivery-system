@@ -12,132 +12,230 @@ import { Input } from "@/components/ui/input"
 import { Loader2, Search, Star } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { DeliveryMap } from "@/components/ui/delivery-map"
+import { getDeliveriesByCustomerId, IDelivery, getDeliveryWithOrderDetails, OrderDetails } from "@/services/delivery-service"
+import { getCookie } from "cookies-next"
 
-// Sample data
-const SAMPLE_ORDERS = [
-  {
-    id: "del-001",
-    status: "IN_PROGRESS" as DeliveryStatus,
-    orderId: "ORD-1234",
-    restaurant: {
-      name: "Burger Palace",
-      address: "123 Main St, New York, NY",
-      phone: "555-123-4567",
-      location: { lat: 40.7128, lng: -74.006 },
-    },
-    customer: {
-      name: "John Smith",
-      address: "456 Park Ave, New York, NY",
-      phone: "555-987-6543",
-      location: { lat: 40.7282, lng: -73.9942 },
-    },
-    driver: {
-      name: "Michael Johnson",
-      phone: "555-555-5555",
-      vehicle: "Honda Civic (ABC-1234)",
-    },
-    driverLocation: { lat: 40.72, lng: -74.0 },
-    estimatedTime: "15 min",
-    distance: "2.3 mi",
-    amount: "24.50",
-    items: [
-      { name: "Cheeseburger", quantity: 2 },
-      { name: "Fries", quantity: 1 },
-      { name: "Soda", quantity: 2 },
-    ],
-    createdAt: new Date().toISOString(),
-    timestamps: {
-      createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      acceptedAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
-      pickedUpAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
-    },
-  },
-  {
-    id: "del-002",
-    status: "DELIVERED" as DeliveryStatus,
-    orderId: "ORD-5678",
-    restaurant: {
-      name: "Pizza Express",
-      address: "789 Broadway, New York, NY",
-      phone: "555-222-3333",
-      location: { lat: 40.7309, lng: -73.9872 },
-    },
-    customer: {
-      name: "John Smith",
-      address: "456 Park Ave, New York, NY",
-      phone: "555-987-6543",
-      location: { lat: 40.7282, lng: -73.9942 },
-    },
-    driver: {
-      name: "David Brown",
-      phone: "555-666-7777",
-      vehicle: "Toyota Prius (XYZ-5678)",
-    },
-    driverLocation: { lat: 40.7282, lng: -73.9942 },
-    estimatedTime: "0 min",
-    distance: "1.8 mi",
-    amount: "32.75",
-    items: [
-      { name: "Large Pepperoni Pizza", quantity: 1 },
-      { name: "Garlic Knots", quantity: 1 },
-      { name: "2L Soda", quantity: 1 },
-    ],
-    createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-    timestamps: {
-      createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-      acceptedAt: new Date(Date.now() - 1000 * 60 * 55).toISOString(),
-      pickedUpAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-      deliveredAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    },
-  },
-  {
-    id: "del-003",
-    status: "PENDING" as DeliveryStatus,
-    orderId: "ORD-9012",
-    restaurant: {
-      name: "Sushi Delight",
-      address: "567 West St, New York, NY",
-      phone: "555-333-4444",
-      location: { lat: 40.7352, lng: -74.0086 },
-    },
-    customer: {
-      name: "John Smith",
-      address: "456 Park Ave, New York, NY",
-      phone: "555-987-6543",
-      location: { lat: 40.7282, lng: -73.9942 },
-    },
-    driverLocation: { lat: 40.7352, lng: -74.0086 },
-    estimatedTime: "25 min",
-    distance: "2.5 mi",
-    amount: "45.50",
-    items: [
-      { name: "California Roll", quantity: 2 },
-      { name: "Spicy Tuna Roll", quantity: 1 },
-      { name: "Miso Soup", quantity: 2 },
-    ],
-    createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-    timestamps: {
-      createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-    },
-  },
-]
+// Item interface
+interface OrderItem {
+  name: string;
+  quantity: number;
+}
+
+// Extended delivery interface for UI
+interface UIDelivery {
+  id: string;
+  status: DeliveryStatus;
+  orderId: string;
+  restaurant: {
+    name: string;
+    address: string;
+    phone: string;
+    location: { lat: number; lng: number };
+  };
+  customer: {
+    name: string;
+    address: string;
+    phone: string;
+    location: { lat: number; lng: number };
+  };
+  driver?: {
+    name: string;
+    phone: string;
+    vehicle: string;
+  };
+  driverLocation: { lat: number; lng: number };
+  estimatedTime: string;
+  distance: string;
+  amount: string;
+  items: OrderItem[];
+  createdAt: string;
+  timestamps: {
+    createdAt: string;
+    acceptedAt?: string;
+    pickedUpAt?: string;
+    deliveredAt?: string;
+    cancelledAt?: string;
+  };
+}
+
+// Extended OrderDetails interface with expected fields
+interface ExtendedOrderDetails extends OrderDetails {
+  restaurantName?: string;
+  restaurantAddress?: string;
+  restaurantPhone?: string;
+  restaurantDetails?: {
+    location?: {
+      latitude?: number;
+      longitude?: number;
+    };
+  };
+  customerPhone?: string;
+  driverName?: string;
+  driverPhone?: string;
+  driverVehicle?: string;
+  driverLocation?: {
+    latitude?: number;
+    longitude?: number;
+  };
+  totalAmount?: number;
+  distance?: string;
+  estimatedDeliveryTime?: string;
+  pickedUpAt?: string;
+}
 
 export default function CustomerOrdersPage() {
-  const [orders, setOrders] = useState(SAMPLE_ORDERS)
+  const [orders, setOrders] = useState<UIDelivery[]>([])
   const [activeOrder, setActiveOrder] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const [showRating, setShowRating] = useState(false)
   const [rating, setRating] = useState(0)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [userName, setUserName] = useState<string>("Customer")
+  const [userAddress, setUserAddress] = useState<string>("")
+  const [userPhone, setUserPhone] = useState<string>("")
+
+  // Get user ID from cookies or localStorage
+  useEffect(() => {
+    // Try to get from cookie first (for SSR)
+    const cookieUserId = getCookie('userId')?.toString();
+    
+    // Otherwise try localStorage (client-side only)
+    const localStorageUserId = typeof window !== 'undefined' 
+      ? localStorage.getItem('userId')
+      : null;
+    
+    setUserId(cookieUserId || localStorageUserId);
+    
+    // Get user info if available
+    if (typeof window !== 'undefined') {
+      const firstName = localStorage.getItem('firstName');
+      const lastName = localStorage.getItem('lastName');
+      if (firstName || lastName) {
+        setUserName(`${firstName || ''} ${lastName || ''}`.trim());
+      }
+      
+      // Get additional user info
+      const address = localStorage.getItem('address');
+      if (address) setUserAddress(address);
+      
+      const phone = localStorage.getItem('phone');
+      if (phone) setUserPhone(phone);
+    }
+  }, []);
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
+    const fetchOrders = async () => {
+      if (userId) {
+        try {
+          const customerId = userId;
+          const deliveries = await getDeliveriesByCustomerId(customerId);
+          
+          // Transform data to match the UI requirements
+          const transformedData = await Promise.all(deliveries.map(async (delivery: IDelivery) => {
+            // For each delivery, fetch additional order details if available
+            let orderDetails: ExtendedOrderDetails | null = null;
+            try {
+              const details = await getDeliveryWithOrderDetails(delivery._id || "");
+              orderDetails = details.order as ExtendedOrderDetails;
+            } catch (error) {
+              console.error("Failed to fetch order details:", error);
+            }
+            
+            // Extract restaurant details from order
+            const restaurantName = orderDetails?.restaurantName || "Restaurant";
+            const restaurantAddress = orderDetails?.restaurantAddress || "Address unavailable";
+            const restaurantPhone = orderDetails?.restaurantPhone || "Phone unavailable";
+            
+            // Extract locations from order details
+            const restaurantLocation = { 
+              lat: orderDetails?.restaurantDetails?.location?.latitude || 40.7128, 
+              lng: orderDetails?.restaurantDetails?.location?.longitude || -74.006 
+            };
+              
+            const customerLocation = { 
+              lat: orderDetails?.customerDetails?.latitude || 40.7282, 
+              lng: orderDetails?.customerDetails?.longitude || -73.9942 
+            };
+            
+            // Get driver details if available
+            const driverName = orderDetails?.driverName || "Driver";
+            const driverPhone = orderDetails?.driverPhone || "Phone unavailable";
+            const driverVehicle = orderDetails?.driverVehicle || "Vehicle unavailable";
+            
+            // Get driver location from order details or use a fallback
+            const driverLocation = { 
+              lat: orderDetails?.driverLocation?.latitude || 40.72, 
+              lng: orderDetails?.driverLocation?.longitude || -74.0 
+            };
+            
+            // Create formatted order items
+            const items: OrderItem[] = orderDetails?.cartItems?.map((item) => ({
+              name: item?.itemName || "Unknown item",
+              quantity: item?.quantity || 1
+            })) || [];
+            
+            // Get order amount from details if available
+            const orderAmount = orderDetails?.totalAmount ? 
+              orderDetails.totalAmount.toString() : 
+              "0.00";
+            
+            // Calculate distance and ETA if available in order details
+            const distance = orderDetails?.distance || "Unknown";
+            const estimatedTime = orderDetails?.estimatedDeliveryTime || "Unknown";
+            
+            // Use current timestamp as fallback for createdAt
+            const createdAt = delivery.createdAt || new Date().toISOString();
+            
+            return {
+              id: delivery._id || "",
+              status: delivery.status as DeliveryStatus,
+              orderId: delivery.orderId,
+              restaurant: {
+                name: restaurantName,
+                address: restaurantAddress,
+                phone: restaurantPhone,
+                location: restaurantLocation,
+              },
+              customer: {
+                name: userName || "Customer",
+                address: userAddress || orderDetails?.customerDetails?.address || "Address unavailable",
+                phone: userPhone || orderDetails?.customerPhone || "Phone unavailable",
+                location: customerLocation,
+              },
+              driver: delivery.driverId ? {
+                name: driverName,
+                phone: driverPhone,
+                vehicle: driverVehicle,
+              } : undefined,
+              driverLocation,
+              estimatedTime,
+              distance,
+              amount: orderAmount,
+              items,
+              createdAt,
+              timestamps: {
+                createdAt, // Use same fallback
+                acceptedAt: delivery.acceptedAt,
+                pickedUpAt: orderDetails?.pickedUpAt,
+                deliveredAt: delivery.deliveredAt,
+              },
+            } as UIDelivery;
+          }));
+          
+          setOrders(transformedData)
+        } catch (error) {
+          console.error("Failed to fetch orders:", error)
+          setOrders([])
+        }
+      } else {
+        setOrders([])
+      }
       setLoading(false)
-    }, 1500)
+    }
 
-    return () => clearTimeout(timer)
-  }, [])
+    fetchOrders()
+  }, [userId, userName, userAddress, userPhone])
 
   const handleViewDetails = (id: string) => {
     setActiveOrder(id)
@@ -146,7 +244,7 @@ export default function CustomerOrdersPage() {
   const filteredOrders = orders.filter(
     (order) =>
       order.orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.restaurant.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      (order.restaurant.name && order.restaurant.name.toLowerCase().includes(searchQuery.toLowerCase())),
   )
 
   const activeOrderData = orders.find((order) => order.id === activeOrder)
@@ -155,10 +253,17 @@ export default function CustomerOrdersPage() {
     setShowRating(true)
   }
 
-  const submitRating = () => {
-    // In a real app, this would submit the rating to the backend
-    setShowRating(false)
-    // Show a success message or update the UI
+  const submitRating = async () => {
+    if (!activeOrderData || rating === 0) return;
+    
+    try {
+      // This would be implemented to submit rating to the backend
+      // await submitDeliveryRating(activeOrderData.id, rating);
+      setShowRating(false);
+      // Show a success message
+    } catch (error) {
+      console.error("Failed to submit rating:", error);
+    }
   }
 
   if (loading) {
@@ -167,7 +272,7 @@ export default function CustomerOrdersPage() {
         <div className="flex h-[80vh] items-center justify-center">
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Loading orders...</p>
+            <p className="text-muted-foreground">Loading orders...</p>
           </div>
         </div>
       </>
@@ -283,17 +388,21 @@ export default function CustomerOrdersPage() {
                 </div>
                 <div className="p-4">
                   <ul className="space-y-2">
-                    {activeOrderData.items.map((item, index) => (
-                      <li key={index} className="flex justify-between text-sm">
-                        <span>{item.name}</span>
-                        <span>x{item.quantity}</span>
-                      </li>
-                    ))}
+                    {activeOrderData.items.length > 0 ? (
+                      activeOrderData.items.map((item: OrderItem, index: number) => (
+                        <li key={index} className="flex justify-between text-sm">
+                          <span>{item.name}</span>
+                          <span>x{item.quantity}</span>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="text-sm text-muted-foreground">No items available</li>
+                    )}
                   </ul>
                   <div className="mt-4 border-t pt-4">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal</span>
-                      <span>${(Number.parseFloat(activeOrderData.amount) - 5).toFixed(2)}</span>
+                      <span>${(Number.parseFloat(activeOrderData.amount || "0") - 5).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>Delivery Fee</span>
@@ -305,7 +414,7 @@ export default function CustomerOrdersPage() {
                     </div>
                     <div className="mt-2 flex justify-between font-medium">
                       <span>Total</span>
-                      <span>${activeOrderData.amount}</span>
+                      <span>${activeOrderData.amount || "0.00"}</span>
                     </div>
                   </div>
                 </div>
