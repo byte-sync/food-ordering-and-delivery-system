@@ -68,5 +68,3 @@ Using kind for Kubernetes Deployment:
   - Use a managed Kubernetes service
   - Store secrets using Kubernetes Secrets
   - Use TLS, ingress, and monitoring tools.
-  - wewqeqwe
-  
